@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply min-h-screen text-white;
+  background: #070A18; /* deep navy */
+}
+
+.bg-gradient-soft {
+  background:
+    radial-gradient(900px 600px at 15% 20%, rgba(120, 70, 255, 0.18), transparent 60%),
+    radial-gradient(800px 500px at 85% 30%, rgba(0, 220, 255, 0.12), transparent 55%),
+    radial-gradient(1000px 700px at 50% 90%, rgba(255, 255, 255, 0.06), transparent 60%),
+    #070A18;
+}
