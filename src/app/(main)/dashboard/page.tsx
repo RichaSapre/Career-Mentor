@@ -64,7 +64,7 @@ export default function DashboardPage() {
           </h1>
           <p className="text-zinc-400 mt-2 flex items-center gap-2 text-lg">
             <SparkleIcon className="w-4 h-4 text-cyan-400" />
-            You're 75% of the way to your ideal Data Analyst role.
+            You&apos;re 75% of the way to your ideal Data Analyst role.
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm font-medium bg-[#0F172A]/40 border border-slate-800/50 px-5 py-2.5 rounded-full text-cyan-400 backdrop-blur-md shadow-lg">
