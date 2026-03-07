@@ -44,11 +44,11 @@ export function SideNav() {
   return (
     <>
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/5 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 z-50">
-        <div className="text-lg font-bold">Career Mentor</div>
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#0F172A]/80 backdrop-blur-xl border-b border-slate-800/50 flex items-center justify-between px-4 z-50">
+        <div className="text-lg font-bold text-zinc-100">Career Mentor</div>
         <button 
           onClick={toggleMobileSidebar}
-          className="p-2 text-white/70 hover:text-white"
+          className="p-2 text-zinc-400 hover:text-cyan-400"
         >
           {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -65,7 +65,7 @@ export function SideNav() {
       {/* Sidebar aside */}
       <aside 
         className={cn(
-          "fixed md:sticky top-0 left-0 h-screen z-50 transition-all duration-300 ease-in-out border-r border-white/10 bg-white/5 backdrop-blur-xl flex flex-col p-4",
+          "fixed md:sticky top-0 left-0 h-screen z-50 transition-all duration-300 ease-in-out border-r border-slate-800/50 bg-[#0F172A]/80 backdrop-blur-xl flex flex-col p-4",
           isCollapsed ? "md:w-20" : "md:w-64",
           isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
         )}
@@ -75,10 +75,10 @@ export function SideNav() {
           "flex items-center mb-8",
           isCollapsed ? "justify-center" : "justify-between"
         )}>
-          {!isCollapsed && <div className="text-lg font-bold">Career Mentor</div>}
+          {!isCollapsed && <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-zinc-100 to-zinc-500">Career Mentor</div>}
           <button 
             onClick={toggleSidebar}
-            className="hidden md:flex p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition"
+            className="hidden md:flex p-2 rounded-lg bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition"
           >
             {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
@@ -96,17 +96,16 @@ export function SideNav() {
                 href={it.href as any}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all group",
                   active
-                    ? "bg-white/15 text-white"
-                    : "text-white/70 hover:bg-white/10",
+                    ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                    : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200 border border-transparent",
                   isCollapsed && "md:justify-center md:px-0"
                 )}
                 title={isCollapsed ? it.label : ""}
               >
-                <Icon size={20} className="shrink-0" />
+                <Icon size={20} className={cn("shrink-0", active ? "text-cyan-400" : "text-zinc-600 group-hover:text-zinc-400")} />
                 {!isCollapsed && <span>{it.label}</span>}
-                {/* Always show text on mobile since it's never 'collapsed' there */}
                 <span className="md:hidden">{it.label}</span>
               </Link>
             );

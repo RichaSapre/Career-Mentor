@@ -14,6 +14,9 @@ export default {
           DEFAULT: "#0A6B6A",
           dark: "#074E4D"
         }
+      },
+      animation: {
+        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       }
     }
   },

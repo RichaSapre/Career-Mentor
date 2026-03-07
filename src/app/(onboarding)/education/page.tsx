@@ -34,22 +34,28 @@ export default function EducationPage() {
     if (!draft.email || !draft.password) router.replace("/signup");
 
     // prefill if present
-    if (draft.degreeLevel) form.setValue("courseName", draft.degreeLevel);
-    if (draft.major) form.setValue("concentration", draft.major);
-    if (draft.university) form.setValue("schoolName", draft.university);
-    if (draft.gpa !== undefined) form.setValue("gpa", String(draft.gpa));
-    if (draft.graduationDate) form.setValue("gradYear", draft.graduationDate.slice(0, 4));
+    const edu = draft.education?.[0];
+    if (edu) {
+      if (edu.courseName) form.setValue("courseName", edu.courseName);
+      if (edu.concentration) form.setValue("concentration", edu.concentration);
+      if (edu.schoolName) form.setValue("schoolName", edu.schoolName);
+      if (edu.gpa !== undefined) form.setValue("gpa", edu.gpa);
+      if (edu.gradYear) form.setValue("gradYear", edu.gradYear);
+    }
   }, [form, router]);
 
   function onSubmit(values: FormValues) {
-    // Map Canva fields -> backend expected fields
-    const gradDate = `${values.gradYear}-05-15`; // safe placeholder date
+    // Map fields
+    const newEdu = {
+      courseName: values.courseName,
+      concentration: values.concentration,
+      schoolName: values.schoolName,
+      gpa: values.gpa,
+      gradYear: values.gradYear,
+    };
+    
     signupDraft.set({
-      degreeLevel: values.courseName,
-      major: values.concentration,
-      university: values.schoolName,
-      gpa: values.gpa ? Number(values.gpa) : undefined,
-      graduationDate: gradDate,
+      education: [newEdu],
     });
     router.push("/experience");
   }

@@ -22,7 +22,7 @@ export function BottomNav() {
           return (
             <Link
               key={it.href}
-              href={it.href}
+              href={it.href as any}
               className={cn(
                 "rounded-lg px-2 py-1 text-xs font-medium transition",
                 active ? "bg-white/15 text-white" : "text-white/70 hover:bg-white/10"

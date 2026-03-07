@@ -14,72 +14,72 @@ const demoTokens: Tokens = {
 };
 
 const demoUser: UserProfile = {
-  user_id: "demo-user",
-  full_name: "Richa Sapre",
+  userId: "demo-user",
+  fullName: "Richa Sapre",
   email: "demo@careermentor.app",
-  profile_status: "complete",
-  degree_level: "Masters",
+  profileStatus: "complete",
+  degreeLevel: "Masters",
   major: "Computer Science",
   university: "CSU East Bay",
-  graduation_date: "2026-05-15",
+  graduationDate: "2026-05-15",
   skills: [
-    { skill_name: "Python", proficiency_level: 4 },
-    { skill_name: "SQL", proficiency_level: 4 },
-    { skill_name: "React", proficiency_level: 3 },
-    { skill_name: "Data Analysis", proficiency_level: 4 },
+    { skillName: "Python", proficiencyLevel: 4 },
+    { skillName: "SQL", proficiencyLevel: 4 },
+    { skillName: "React", proficiencyLevel: 3 },
+    { skillName: "Data Analysis", proficiencyLevel: 4 },
   ],
   experiences: [
     {
       title: "Student Developer",
       company: "University Project",
       description: "Built an airline booking system and worked on UI modules.",
-      tech_stack: ["C++", "SQL"],
+      techStack: ["C++", "SQL"],
     },
   ],
 };
 
 const demoRecommendations: RecommendationItem[] = [
   {
-    role_id: "role-1",
-    role_title: "Data Analyst",
-    fit_score: 85,
-    demand_score: 78,
-    competition_score: 55,
-    trend_direction: "up",
-    top_required_skills: ["SQL", "Python", "Excel", "Data Visualization"],
-    missing_skills: ["Tableau"],
-    average_salary: "$85k–$110k",
-    top_locations: ["San Francisco", "Seattle", "Austin"],
+    roleId: "role-1",
+    roleTitle: "Data Analyst",
+    fitScore: 85,
+    demandScore: 78,
+    competitionScore: 55,
+    trendDirection: "up",
+    topRequiredSkills: ["SQL", "Python", "Excel", "Data Visualization"],
+    missingSkills: ["Tableau"],
+    averageSalary: "$85k–$110k",
+    topLocations: ["San Francisco", "Seattle", "Austin"],
     explanation: "Strong match based on your Python + SQL + analysis skills.",
-    matching_skills_count: 4,
+    matchingSkillsCount: 4,
   },
   {
-    role_id: "role-2",
-    role_title: "Software Engineer",
-    fit_score: 74,
-    demand_score: 82,
-    competition_score: 70,
-    trend_direction: "stable",
-    top_required_skills: ["DSA", "JavaScript", "React", "APIs"],
-    missing_skills: ["DSA practice"],
-    average_salary: "$100k–$140k",
-    top_locations: ["San Jose", "New York", "Remote"],
+    roleId: "role-2",
+    roleTitle: "Software Engineer",
+    fitScore: 74,
+    demandScore: 82,
+    competitionScore: 70,
+    trendDirection: "stable",
+    topRequiredSkills: ["DSA", "JavaScript", "React", "APIs"],
+    missingSkills: ["DSA practice"],
+    averageSalary: "$100k–$140k",
+    topLocations: ["San Jose", "New York", "Remote"],
     explanation: "Good fit, but strengthen DSA to improve competitiveness.",
-    matching_skills_count: 4,
+    matchingSkillsCount: 4,
   },
 ];
 
 const demoMarket: MarketAnalyzerResponse = {
-  job_title: "Data Analyst",
-  job_posting_count: 1240,
-  trend_series: [
+  jobTitle: "Data Analyst",
+  jobPostingCount: 1240,
+  trendSeries: [
     { date: "2025-10", count: 820 },
     { date: "2025-11", count: 910 },
     { date: "2025-12", count: 970 },
     { date: "2026-01", count: 1120 },
     { date: "2026-02", count: 1240 },
   ],
-  top_skills: [
+  topSkills: [
     { skill: "SQL", count: 880 },
     { skill: "Excel", count: 760 },
     { skill: "Python", count: 640 },
@@ -106,11 +106,11 @@ function mockResponseFor<T>(path: string): T {
   // PROFILE
   if (path === API.updateProfile) {
     // Return "updated" user for UI
-    return { ...demoUser, profile_status: "complete" } as unknown as T;
+    return { ...demoUser, profileStatus: "complete" } as unknown as T;
   }
 
   // RECOMMENDATIONS / MARKET
-  if (path === API.recommendations) return demoRecommendations as unknown as T;
+  if (path === API.recommendedRoles) return demoRecommendations as unknown as T;
   if (path.startsWith(API.marketAnalyzer)) return demoMarket as unknown as T;
 
   // Default safe fallback
