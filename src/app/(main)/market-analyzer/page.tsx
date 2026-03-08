@@ -22,10 +22,8 @@ import { GlassCard } from "@/components/glass/GlassCard";
 import { apiFetch } from "@/lib/api/client";
 import { tokenStore } from "@/lib/auth/tokenStore";
 
-// If your endpoints.ts already has these, you can use those instead.
-// Keeping inline so this page works even if endpoints.ts isn't updated.
-const MARKET_ENDPOINT = "/market-analyzer"; // GET ?job_title=...
-const RECS_ENDPOINT = "/recommendations"; // GET (auth)
+const MARKET_ENDPOINT = "/market-analyzer";
+const RECS_ENDPOINT = "/recommendations";
 
 // ----- Types -----
 type TrendPoint = { date: string; count: number };
@@ -46,7 +44,7 @@ type RecommendationItem = {
   explanation?: string;
 };
 
-// ----- Mock fallback (so UI always shows for demo) -----
+// ----- Mock fallback -----
 const FALLBACK_MARKET: MarketResponse = {
   job_title: "Data Analyst",
   job_posting_count: 1240,
@@ -98,7 +96,6 @@ export default function MarketAnalyzerPage() {
       setLoading(true);
       setError(null);
 
-      // 1) Market data (can be public or private depending on backend)
       try {
         const m = (await apiFetch(
           `${MARKET_ENDPOINT}?job_title=${encodeURIComponent("Data Analyst")}`,
@@ -118,13 +115,9 @@ export default function MarketAnalyzerPage() {
         }
       }
 
-      // 2) Recommendations (private/auth)
       try {
         const r = (await apiFetch(RECS_ENDPOINT, { method: "GET", auth: true })) as any;
-
-        // Support either: array OR {data: array}
         const recList: RecommendationItem[] = Array.isArray(r) ? r : (r?.data ?? []);
-
         if (mounted && recList?.length) setRecs(recList);
         else if (mounted) setRecs(FALLBACK_RECS);
       } catch {
@@ -135,9 +128,7 @@ export default function MarketAnalyzerPage() {
     }
 
     load();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   const trend = market.trend_series ?? FALLBACK_MARKET.trend_series!;
@@ -154,44 +145,44 @@ export default function MarketAnalyzerPage() {
     <div className="mx-auto max-w-6xl space-y-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400/80 text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-sm font-medium mb-4">
             <TrendingUp className="w-4 h-4" />
             <span>Market Intelligence</span>
           </div>
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-zinc-100 to-zinc-500">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)]">
             Market Analysis
           </h1>
-          <p className="text-zinc-500 mt-2 text-lg">
+          <p className="text-muted mt-2 text-lg">
             Real-time hiring trends and skill saturation data.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-400 backdrop-blur-md">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-500 backdrop-blur-md">
           {error}
         </div>
       )}
 
       {/* Top metrics */}
       <div className="grid gap-5 md:grid-cols-3">
-        <GlassCard className="hover:border-cyan-500/20 transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Active Postings</div>
-          <div className="mt-2 text-3xl font-black italic text-zinc-100">
+        <GlassCard className="hover:border-border-hover transition-all">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Active Postings</div>
+          <div className="mt-2 text-3xl font-black italic text-heading">
             {loading ? "…" : postingCount.toLocaleString()}
           </div>
         </GlassCard>
 
-        <GlassCard className="hover:border-cyan-500/20 transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Most Demanded</div>
-          <div className="mt-2 text-3xl font-black italic text-cyan-400">
+        <GlassCard className="hover:border-border-hover transition-all">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Most Demanded</div>
+          <div className="mt-2 text-3xl font-black italic text-accent-primary">
             {loading ? "…" : (topSkills?.[0]?.skill ?? "—")}
           </div>
         </GlassCard>
 
-        <GlassCard className="hover:border-emerald-500/20 transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Monthly Volume</div>
-          <div className="mt-2 text-3xl font-black italic text-emerald-400">
+        <GlassCard className="hover:border-border-hover transition-all">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Monthly Volume</div>
+          <div className="mt-2 text-3xl font-black italic text-accent-secondary">
             {loading ? "…" : (trend?.[trend.length - 1]?.count ?? "—")}
           </div>
         </GlassCard>
@@ -199,47 +190,48 @@ export default function MarketAnalyzerPage() {
 
       {/* Chart + top skills */}
       <div className="grid gap-8 md:grid-cols-3">
-        <GlassCard className="md:col-span-2 border-slate-800/50">
+        <GlassCard className="md:col-span-2">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Trend Dataset</div>
-              <div className="text-xl font-bold text-zinc-200 mt-1">{jobTitle}</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Trend Dataset</div>
+              <div className="text-xl font-bold text-heading mt-1">{jobTitle}</div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-cyan-500" />
-              <span className="text-xs text-zinc-500 font-medium tracking-wide">Volume</span>
+              <div className="w-3 h-3 rounded-full bg-accent-primary" />
+              <span className="text-xs text-muted font-medium tracking-wide">Volume</span>
             </div>
           </div>
 
           <div className="mt-4" style={{ height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <ReLineChart data={trend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="6 6" stroke="#ffffff08" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fill: "#52525b", fontSize: 10, fontWeight: 600 }} 
+                <CartesianGrid strokeDasharray="6 6" stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis 
-                  tick={{ fill: "#52525b", fontSize: 10, fontWeight: 600 }} 
+                <YAxis
+                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#0F172A', 
-                    border: '1px solid rgba(255,255,255,0.05)',
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--surface-inset)',
+                    border: '1px solid var(--border)',
                     borderRadius: '12px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    color: 'var(--heading)',
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="#06B6D4"
+                  stroke="var(--accent-primary)"
                   strokeWidth={4}
-                  dot={{ r: 4, fill: '#06B6D4', strokeWidth: 2, stroke: '#0F172A' }}
+                  dot={{ r: 4, fill: 'var(--accent-primary)', strokeWidth: 2, stroke: 'var(--background)' }}
                   activeDot={{ r: 6, strokeWidth: 0 }}
                 />
               </ReLineChart>
@@ -247,19 +239,19 @@ export default function MarketAnalyzerPage() {
           </div>
         </GlassCard>
 
-        <GlassCard className="border-slate-800/50">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-6">Market Saturation</div>
+        <GlassCard>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint mb-6">Market Saturation</div>
 
           <div className="space-y-4">
             {topSkills.map((s, idx) => (
               <div key={s.skill} className="group flex flex-col gap-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-zinc-400 group-hover:text-zinc-200 transition-colors">{s.skill}</span>
-                  <span className="text-zinc-600 font-medium">{s.count} mentions</span>
+                  <span className="font-bold text-muted group-hover:text-heading transition-colors">{s.skill}</span>
+                  <span className="text-faint font-medium">{s.count} mentions</span>
                 </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-cyan-500/40 rounded-full group-hover:bg-cyan-500 transition-all duration-500"
+                <div className="h-1.5 w-full bg-surface-inset rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-accent-primary/40 rounded-full group-hover:bg-accent-primary transition-all duration-500"
                     style={{ width: `${(s.count / topSkills[0].count) * 100}%` }}
                   />
                 </div>
@@ -267,7 +259,7 @@ export default function MarketAnalyzerPage() {
             ))}
           </div>
 
-          <div className="mt-8 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10 text-xs text-cyan-400/70 leading-relaxed font-medium">
+          <div className="mt-8 p-4 rounded-xl bg-badge-info-bg border border-badge-info-border text-xs text-badge-info-text leading-relaxed font-medium">
             Personalized recommendations are generated by cross-referencing these skills with your profile.
           </div>
         </GlassCard>
@@ -276,23 +268,23 @@ export default function MarketAnalyzerPage() {
       {/* Recommendations */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-2xl font-bold text-zinc-200">Personalized Trajectory</h2>
-          <div className="text-sm text-zinc-500 font-medium">Profile Match Consensus</div>
+          <h2 className="text-2xl font-bold text-heading">Personalized Trajectory</h2>
+          <div className="text-sm text-muted font-medium">Profile Match Consensus</div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           {(recs?.length ? recs : FALLBACK_RECS).map((r) => (
-            <GlassCard key={r.role_id} className="group hover:bg-[#0F172A]/60 border-slate-800/50 hover:border-cyan-500/30 transition-all duration-300">
+            <GlassCard key={r.role_id} className="group hover:bg-surface-hover hover:border-border-hover transition-all duration-300">
               <div className="flex justify-between gap-6">
                 <div className="flex-1">
-                  <div className="text-xl font-bold text-zinc-100 group-hover:text-white transition-colors">{r.role_title}</div>
-                  <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{r.explanation}</p>
+                  <div className="text-xl font-bold text-heading group-hover:text-accent-primary transition-colors">{r.role_title}</div>
+                  <p className="mt-2 text-sm text-muted leading-relaxed">{r.explanation}</p>
                   
                   <div className="mt-6 flex flex-wrap gap-2">
                     {(r.missing_skills ?? []).map((s) => (
                       <span
                         key={s}
-                        className="rounded-lg bg-zinc-900 border border-white/5 px-3 py-1 text-xs text-zinc-400 font-medium"
+                        className="rounded-lg bg-tag-bg border border-tag-border px-3 py-1 text-xs text-tag-text font-medium"
                       >
                         {s}
                       </span>
@@ -300,8 +292,8 @@ export default function MarketAnalyzerPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center justify-center min-w-[80px]">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-1">Fit</div>
-                  <div className="text-4xl font-black italic tracking-tighter text-cyan-400">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-faint mb-1">Fit</div>
+                  <div className="text-4xl font-black italic tracking-tighter text-accent-primary">
                     {r.fit_score}%
                   </div>
                 </div>

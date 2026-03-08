@@ -9,9 +9,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         ref={ref}
         className={cn(
-          "w-full rounded-xl bg-white/15 px-4 py-3 text-white outline-none",
-          "placeholder:text-white/50",
-          "focus:ring-2 focus:ring-white/30",
+          "w-full rounded-xl bg-input-bg border border-input-border px-4 py-3 text-input-text outline-none",
+          "placeholder:text-input-placeholder",
+          "focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary",
+          "transition-all",
           className
         )}
         {...props}

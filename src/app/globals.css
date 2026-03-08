@@ -2,18 +2,188 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
+/*
+ * ─────────────────────────────────────────────────
+ *  DESIGN TOKENS  (single source of truth)
+ *
+ *  Every colour, border, shadow used across the app
+ *  should reference these variables via Tailwind
+ *  utilities defined in tailwind.config.ts.
+ *
+ *  To change the entire light or dark palette,
+ *  edit ONLY this file — nothing else.
+ * ─────────────────────────────────────────────────
+ */
+
+@layer base {
+  :root {
+    /* ── Backgrounds ── */
+    --background: #F8FAFC;          /* page canvas */
+    --surface: rgba(255,255,255,0.80);  /* cards / panels */
+    --surface-hover: rgba(255,255,255,1);
+    --surface-inset: #F1F5F9;       /* inset areas inside cards */
+
+    /* ── Typography ── */
+    --heading: #0F172A;             /* primary headings */
+    --body: #334155;                /* body / paragraph text */
+    --muted: #64748B;              /* secondary / helper text */
+    --faint: #94A3B8;              /* placeholders, timestamps */
+
+    /* ── Borders & Dividers ── */
+    --border: rgba(15,23,42,0.08);
+    --border-hover: rgba(6,182,212,0.30);
+    --divider: #E2E8F0;
+
+    /* ── Brand Accent ── */
+    --accent-primary: #0284C7;      /* sky-600 */
+    --accent-secondary: #059669;    /* emerald-600 */
+
+    /* ── Gradient for hero headings ── */
+    --gradient-from: #312E81;       /* indigo-900 */
+    --gradient-via: #0E7490;        /* cyan-800 */
+    --gradient-to: #047857;         /* emerald-700 */
+
+    /* ── Form Controls ── */
+    --input-bg: rgba(255,255,255,0.60);
+    --input-border: rgba(15,23,42,0.10);
+    --input-text: #0F172A;
+    --input-placeholder: #94A3B8;
+    --input-focus-ring: rgba(2,132,199,0.15);
+
+    /* ── Shadows ── */
+    --shadow-card: 0 8px 30px rgb(0 0 0 / 0.04);
+    --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.08);
+    --shadow-glow-primary: 0 0 20px rgba(7, 89, 133, 0.6);
+    --shadow-glow-secondary: 0 0 20px rgba(4, 120, 87, 0.6);
+
+    /* ── Misc ── */
+    --glow-opacity: 0.08;
+    --overlay: rgba(0,0,0,0.50);
+    --badge-success-bg: rgba(5,150,105,0.10);
+    --badge-success-border: rgba(5,150,105,0.20);
+    --badge-success-text: #047857;
+    --badge-info-bg: rgba(2,132,199,0.10);
+    --badge-info-border: rgba(2,132,199,0.20);
+    --badge-info-text: #0369A1;
+    --tag-bg: #F1F5F9;
+    --tag-border: rgba(15,23,42,0.08);
+    --tag-text: #475569;
+    --tag-hover-bg: rgba(2,132,199,0.06);
+    --tag-hover-border: rgba(2,132,199,0.20);
+    --tag-hover-text: #0369A1;
+
+    /* ── Buttons ── */
+    --btn-primary-bg: #0284C7;
+    --btn-primary-hover: #0EA5E9;
+    --btn-primary-text: #FFFFFF;
+    --btn-ghost-bg: transparent;
+    --btn-ghost-hover: rgba(15,23,42,0.05);
+    --btn-ghost-text: #334155;
+    --btn-secondary-bg: #F1F5F9;
+    --btn-secondary-hover: #E2E8F0;
+    --btn-secondary-text: #334155;
+    --btn-secondary-border: rgba(15,23,42,0.08);
+  }
+
+  .dark {
+    /* ── Backgrounds ── */
+    --background: #05070A;
+    --surface: rgba(15,23,42,0.40);
+    --surface-hover: rgba(15,23,42,0.60);
+    --surface-inset: rgba(15,23,42,0.50);
+
+    /* ── Typography ── */
+    --heading: #F8FAFC;
+    --body: #E2E8F0;
+    --muted: #94A3B8;
+    --faint: #64748B;
+
+    /* ── Borders & Dividers ── */
+    --border: rgba(30,41,59,0.50);
+    --border-hover: rgba(6,182,212,0.30);
+    --divider: rgba(30,41,59,0.50);
+
+    /* ── Brand Accent ── */
+    --accent-primary: #06B6D4;
+    --accent-secondary: #10B981;
+
+    /* ── Gradient for hero headings ── */
+    --gradient-from: #F4F4F5;
+    --gradient-via: #A1A1AA;
+    --gradient-to: #71717A;
+
+    /* ── Form Controls ── */
+    --input-bg: rgba(255,255,255,0.06);
+    --input-border: rgba(255,255,255,0.10);
+    --input-text: #F4F4F5;
+    --input-placeholder: #52525B;
+    --input-focus-ring: rgba(6,182,212,0.15);
+
+    /* ── Shadows ── */
+    --shadow-card: 0 8px 30px rgb(0 0 0 / 0.30);
+    --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.50);
+    --shadow-glow-primary: 0 0 20px rgba(6, 182, 212, 0.5);
+    --shadow-glow-secondary: 0 0 20px rgba(16, 185, 129, 0.5);
+
+    /* ── Misc ── */
+    --glow-opacity: 0.05;
+    --overlay: rgba(0,0,0,0.75);
+    --badge-success-bg: rgba(16,185,129,0.10);
+    --badge-success-border: rgba(16,185,129,0.20);
+    --badge-success-text: #34D399;
+    --badge-info-bg: rgba(6,182,212,0.10);
+    --badge-info-border: rgba(6,182,212,0.20);
+    --badge-info-text: #22D3EE;
+    --tag-bg: rgba(255,255,255,0.05);
+    --tag-border: rgba(255,255,255,0.05);
+    --tag-text: #A1A1AA;
+    --tag-hover-bg: rgba(6,182,212,0.08);
+    --tag-hover-border: rgba(6,182,212,0.20);
+    --tag-hover-text: #67E8F9;
+
+    /* ── Buttons ── */
+    --btn-primary-bg: #0891B2;
+    --btn-primary-hover: #06B6D4;
+    --btn-primary-text: #FFFFFF;
+    --btn-ghost-bg: transparent;
+    --btn-ghost-hover: rgba(255,255,255,0.06);
+    --btn-ghost-text: #E2E8F0;
+    --btn-secondary-bg: rgba(255,255,255,0.05);
+    --btn-secondary-hover: rgba(255,255,255,0.10);
+    --btn-secondary-text: #D4D4D8;
+    --btn-secondary-border: rgba(255,255,255,0.05);
+  }
 }
 
+/* ── Body base ── */
 body {
-  @apply min-h-screen text-zinc-100;
-  background: #05070A;
+  @apply min-h-screen transition-colors duration-300;
+  background-color: var(--background);
+  color: var(--body);
 }
 
+/* ── Reusable background gradient (page-level) ── */
 .bg-gradient-soft {
-  background: 
-    radial-gradient(1200px 800px at 15% 10%, rgba(6, 182, 212, 0.05), transparent 50%),
-    radial-gradient(1000px 700px at 85% 90%, rgba(16, 185, 129, 0.03), transparent 60%),
-    #05070A;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(8,145,178, var(--glow-opacity)), transparent 50%),
+    radial-gradient(1000px 700px at 85% 90%, rgba(5,150,105, var(--glow-opacity)), transparent 60%),
+    var(--background);
+}
+
+/* ── Gemini-like glow border effect ── */
+.gemini-glow {
+  position: relative;
+}
+.gemini-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(to bottom right, rgba(6,182,212,0.15), rgba(16,185,129,0.15));
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+.dark .gemini-glow::before {
+  background: linear-gradient(to bottom right, rgba(6,182,212,0.1), rgba(16,185,129,0.1));
 }

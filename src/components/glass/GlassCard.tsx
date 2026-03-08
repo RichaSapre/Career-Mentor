@@ -10,8 +10,8 @@ export function GlassCard({
     <div
       {...props}
       className={cn(
-        "rounded-2xl border border-slate-800/50 bg-[#0F172A]/40 backdrop-blur-xl shadow-2xl",
-        "px-6 py-8",
+        "rounded-3xl border border-border bg-surface backdrop-blur-2xl shadow-card transition-all duration-300 gemini-glow",
+        "px-6 py-8 relative",
         className
       )}
     >

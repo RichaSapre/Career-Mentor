@@ -37,7 +37,7 @@ export default function SignupPage() {
     <main className="bg-gradient-soft min-h-screen flex items-center justify-center px-8">
       <div className="w-full max-w-xl">
         <GlassCard className="p-12">
-          <h2 className="text-4xl font-semibold text-center">
+          <h2 className="text-4xl font-semibold text-center text-heading">
             Create Account
           </h2>
 
@@ -52,7 +52,7 @@ export default function SignupPage() {
                   required: "Full name is required",
                 })}
                 placeholder="Full Name"
-                className="px-6 py-4 rounded-xl bg-white/10 border border-white/20 focus:outline-none"
+                className="px-6 py-4 rounded-xl bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
               />
               {errors.fullName && (
                 <p className="text-red-400 text-sm">
@@ -72,7 +72,7 @@ export default function SignupPage() {
                   },
                 })}
                 placeholder="Email"
-                className="px-6 py-4 rounded-xl bg-white/10 border border-white/20 focus:outline-none"
+                className="px-6 py-4 rounded-xl bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
               />
               {errors.email && (
                 <p className="text-red-400 text-sm">
@@ -83,7 +83,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              className="py-4 rounded-xl bg-white text-black font-semibold hover:opacity-90 transition"
+              className="py-4 rounded-xl bg-btn-primary-bg text-btn-primary-text font-semibold hover:bg-btn-primary-hover transition-all shadow-glow-primary hover:shadow-[0_0_30px_var(--btn-primary-hover)]"
             >
               Continue
             </button>

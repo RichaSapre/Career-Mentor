@@ -35,10 +35,10 @@ export default function ProfilePhotoModal({ onClose, onSelect }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-[#1f2433] rounded-3xl p-8 w-full max-w-lg shadow-xl relative">
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50">
+      <div className="bg-surface border border-border rounded-3xl p-8 w-full max-w-lg shadow-elevated relative backdrop-blur-xl">
 
-        <h2 className="text-2xl font-semibold mb-6 text-center">
+        <h2 className="text-2xl font-semibold mb-6 text-center text-heading">
           Update Profile Picture
         </h2>
 
@@ -46,10 +46,10 @@ export default function ProfilePhotoModal({ onClose, onSelect }: Props) {
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="border-2 border-dashed border-white/20 rounded-2xl p-10 text-center cursor-pointer hover:bg-white/5 transition"
+          className="border-2 border-dashed border-border rounded-2xl p-10 text-center cursor-pointer hover:bg-surface-hover transition"
           onClick={() => fileInputRef.current?.click()}
         >
-          <p className="text-white/60">
+          <p className="text-muted">
             Drag & drop image here or click to upload
           </p>
 
@@ -67,7 +67,7 @@ export default function ProfilePhotoModal({ onClose, onSelect }: Props) {
 
         {/* Avatar Selection */}
         <div className="mt-8">
-          <p className="text-white/60 mb-3 text-sm">
+          <p className="text-muted mb-3 text-sm">
             Or choose an avatar:
           </p>
 
@@ -76,7 +76,7 @@ export default function ProfilePhotoModal({ onClose, onSelect }: Props) {
               <img
                 key={avatar}
                 src={avatar}
-                className="w-16 h-16 rounded-full cursor-pointer hover:scale-110 transition"
+                className="w-16 h-16 rounded-full cursor-pointer hover:scale-110 transition border border-border"
                 onClick={() => {
                   signupDraft.set({ profilePhoto: avatar });
                   onSelect(avatar);
@@ -102,7 +102,7 @@ export default function ProfilePhotoModal({ onClose, onSelect }: Props) {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/60 hover:text-white"
+          className="absolute top-4 right-4 text-faint hover:text-heading transition-colors"
         >
           ✕
         </button>
