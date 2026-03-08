@@ -23,17 +23,18 @@ export default function ProfilePage() {
     <div className="flex flex-col gap-12">
 
       {/* Header Section */}
-      <div className="flex items-center gap-8">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
         <div className="relative">
 
-          <div className="w-36 h-36 rounded-full bg-white/10 border border-white/20 overflow-hidden shadow-lg">
+          <div className="w-40 h-40 rounded-full bg-surface border border-border overflow-hidden shadow-elevated transition-all">
             {imagePreview ? (
               <img
                 src={imagePreview}
                 className="w-full h-full object-cover"
+                alt="Profile"
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-white/50 text-sm">
+              <div className="flex items-center justify-center h-full text-faint text-sm italic font-medium">
                 No Photo
               </div>
             )}
@@ -41,17 +42,17 @@ export default function ProfilePage() {
 
           <button
             onClick={() => setShowModal(true)}
-            className="absolute -bottom-2 -right-2 bg-white text-black text-xs px-4 py-1 rounded-full shadow hover:scale-105 transition"
+            className="absolute bottom-2 right-2 bg-btn-primary-bg text-btn-primary-text text-xs px-6 py-2.5 rounded-full shadow-glow-primary hover:shadow-[0_0_30px_var(--btn-primary-hover)] hover:bg-btn-primary-hover hover:scale-110 transition-all font-bold"
           >
             Edit
           </button>
         </div>
 
-        <div>
-          <h1 className="text-4xl font-bold">
+        <div className="text-center md:text-left">
+          <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] tracking-tight italic">
             {draft.full_name || "Your Name"}
           </h1>
-          <p className="text-white/60 mt-2">
+          <p className="text-muted mt-2 font-black italic">
             {draft.email || "your@email.com"}
           </p>
         </div>
@@ -61,61 +62,61 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
 
         {/* Education */}
-        <GlassCard className="p-8 min-h-[220px]">
-          <h2 className="text-xl font-semibold mb-6">Education</h2>
+        <GlassCard className="p-10 min-h-[220px] shadow-card">
+          <h2 className="text-xl font-black mb-8 text-heading italic">Education</h2>
 
           {draft.education?.length ? (
             draft.education.map((edu: any, index: number) => (
-              <div key={index} className="mb-6">
-                <p className="font-medium text-lg">
+              <div key={index} className="mb-8 last:mb-0">
+                <p className="font-bold text-lg text-heading italic">
                   {edu.courseName}
                 </p>
-                <p className="text-white/60">
+                <p className="text-muted mt-1 font-bold">
                   {edu.schoolName}
                 </p>
-                <p className="text-white/50 text-sm">
+                <p className="text-faint text-xs mt-2 font-black uppercase tracking-widest italic">
                   {edu.concentration} • GPA: {edu.gpa} • {edu.gradYear}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-white/50">No education added yet.</p>
+            <p className="text-faint italic font-medium">No education added yet.</p>
           )}
         </GlassCard>
 
         {/* Experience */}
-        <GlassCard className="p-8 min-h-[220px]">
-          <h2 className="text-xl font-semibold mb-6">Experience</h2>
+        <GlassCard className="p-10 min-h-[220px] shadow-card">
+          <h2 className="text-xl font-black mb-8 text-heading italic">Experience</h2>
 
           {draft.experiences?.length ? (
             draft.experiences.map((exp: any, index: number) => (
-              <div key={index} className="mb-6">
-                <p className="font-medium text-lg">
+              <div key={index} className="mb-8 last:mb-0">
+                <p className="font-bold text-lg text-heading italic">
                   {exp.title}
                 </p>
-                <p className="text-white/60">
+                <p className="text-muted mt-1 font-bold">
                   {exp.company}
                 </p>
-                <p className="text-white/50 text-sm">
+                <p className="text-faint text-xs mt-2 font-black uppercase tracking-widest italic">
                   {exp.duration}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-white/50">No experience added yet.</p>
+            <p className="text-faint italic font-medium">No experience added yet.</p>
           )}
         </GlassCard>
 
         {/* Skills */}
-        <GlassCard className="p-8 md:col-span-2 min-h-[200px]">
-          <h2 className="text-xl font-semibold mb-6">Skills</h2>
+        <GlassCard className="p-10 md:col-span-2 min-h-[200px] shadow-card">
+          <h2 className="text-xl font-black mb-8 text-heading italic">Skills</h2>
 
           {draft.skills?.length ? (
             <div className="flex flex-wrap gap-3">
               {draft.skills.map((skill: any, index: number) => (
                 <span
                   key={index}
-                  className="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm hover:bg-white/20 transition"
+                  className="px-5 py-2.5 bg-tag-bg border border-tag-border rounded-xl text-sm font-black text-tag-text hover:text-tag-hover-text hover:border-tag-hover-border hover:bg-tag-hover-bg transition-all shadow-sm"
                 >
                   {typeof skill === "string"
                     ? skill
@@ -124,7 +125,7 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <p className="text-white/50">No skills added yet.</p>
+            <p className="text-faint italic font-medium">No skills added yet.</p>
           )}
         </GlassCard>
 

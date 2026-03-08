@@ -39,7 +39,6 @@ export default function PasswordPage() {
 
   if (!allValid) return;
 
-  // ✅ SAVE PASSWORD TO DRAFT
   signupDraft.set({
     password: values.password,
   });
@@ -52,7 +51,7 @@ export default function PasswordPage() {
     <main className="bg-gradient-soft min-h-screen flex items-center justify-center px-8">
       <div className="w-full max-w-xl">
         <GlassCard className="p-12">
-          <h2 className="text-4xl font-semibold text-center">Create Password</h2>
+          <h2 className="text-4xl font-semibold text-center text-heading">Create Password</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-10 flex flex-col gap-6">
 
@@ -62,12 +61,12 @@ export default function PasswordPage() {
                 type={showPassword ? "text" : "password"}
                 {...register("password")}
                 placeholder="Password"
-                className="w-full px-6 py-4 rounded-xl bg-white/10 border border-white/20 focus:outline-none"
+                className="w-full px-6 py-4 rounded-xl bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-4 text-sm text-white/70"
+                className="absolute right-4 top-4 text-sm text-muted hover:text-heading transition-colors"
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
@@ -78,7 +77,7 @@ export default function PasswordPage() {
               type={showPassword ? "text" : "password"}
               {...register("confirmPassword")}
               placeholder="Confirm Password"
-              className="px-6 py-4 rounded-xl bg-white/10 border border-white/20 focus:outline-none"
+              className="px-6 py-4 rounded-xl bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
             />
 
             {/* Validation Bullet Points */}
@@ -123,7 +122,7 @@ export default function PasswordPage() {
                 validations.number &&
                 validations.special &&
                 validations.match && (
-                  <p className="text-green-400 font-medium">
+                  <p className="text-badge-success-text font-medium">
                     ✓ Strong password
                   </p>
                 )}
@@ -131,7 +130,7 @@ export default function PasswordPage() {
 
             <button
               type="submit"
-              className="mt-6 py-4 rounded-xl bg-white text-black font-semibold disabled:opacity-50"
+              className="mt-6 py-4 rounded-xl bg-btn-primary-bg text-btn-primary-text font-semibold hover:bg-btn-primary-hover disabled:opacity-50 transition-all shadow-glow-primary hover:shadow-[0_0_30px_var(--btn-primary-hover)]"
               disabled={
                 !validations.minLength ||
                 !validations.capital ||

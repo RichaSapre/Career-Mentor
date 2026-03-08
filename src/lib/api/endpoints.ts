@@ -8,4 +8,8 @@ export const API = {
   logout: "/auth/logout",
 
   updateProfile: "/auth/signup", // complete profile can be reused
+  
+  marketAnalyzer: "/market-analyzer",
+  recommendedRoles: "/recommendations",
+  skillOntology: "/skills"
 };

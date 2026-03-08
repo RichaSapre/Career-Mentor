@@ -48,7 +48,7 @@ export function useVerifyOtp() {
 export function useSignup() {
   return useMutation({
     mutationFn: async (payload: any) => {
-      const res = await apiFetch<any>(API.signup, {
+      const res = await apiFetch<any>(API.signupComplete, {
         method: "POST",
         body: JSON.stringify(payload),
         auth: false,

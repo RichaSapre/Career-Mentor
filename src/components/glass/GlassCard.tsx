@@ -4,12 +4,14 @@ import { cn } from "@/lib/utils";
 export function GlassCard({
   className,
   children,
-}: React.PropsWithChildren<{ className?: string }>) {
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
+      {...props}
       className={cn(
-        "rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl shadow-xl",
-        "px-5 py-6",
+        "rounded-3xl border border-border bg-surface backdrop-blur-2xl shadow-card transition-all duration-300 gemini-glow",
+        "px-6 py-8 relative",
         className
       )}
     >

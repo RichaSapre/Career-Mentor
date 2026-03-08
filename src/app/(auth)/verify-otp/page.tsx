@@ -27,7 +27,7 @@ export default function VerifyOtpPage() {
     <main className="bg-gradient-soft min-h-screen flex items-center justify-center px-6">
       <div className="w-full max-w-md">
         <GlassCard>
-          <h2 className="text-center text-xl font-semibold">Enter OTP</h2>
+          <h2 className="text-center text-xl font-semibold text-heading">Enter OTP</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
             <Input placeholder="Enter OTP" {...register("otp")} />

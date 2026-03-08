@@ -23,10 +23,9 @@ export default function SkillsPage() {
       ? TECH_SKILLS.filter((s) => s.toLowerCase().includes(q))
       : TECH_SKILLS;
 
-    // Hide already selected
     const filtered = base.filter((s) => !normalizedSelected.has(s.toLowerCase()));
 
-    return filtered.slice(0, 12); // keep dropdown short
+    return filtered.slice(0, 12);
   }, [query, normalizedSelected]);
 
   function addSkill(skill: string) {
@@ -47,17 +46,16 @@ export default function SkillsPage() {
       return;
     }
 
-    // Demo navigation (or call your backend updateProfile here)
     router.push("/dashboard");
   }
 
   return (
     <main className="bg-gradient-soft min-h-screen px-6 py-10">
       <div className="mx-auto max-w-md">
-        <h1 className="text-2xl font-semibold mb-4">Skills</h1>
+        <h1 className="text-2xl font-semibold mb-4 text-heading">Skills</h1>
 
         <GlassCard>
-          <label className="text-sm text-white/80">Add skills (min 4)</label>
+          <label className="text-sm text-muted">Add skills (min 4)</label>
 
           {/* Search input */}
           <div className="relative mt-2">
@@ -69,18 +67,18 @@ export default function SkillsPage() {
               }}
               onFocus={() => setOpen(true)}
               placeholder="Search skills (e.g., React, SQL, AWS)"
-              className="w-full rounded-xl bg-white/10 border border-white/10 px-4 py-3 outline-none placeholder:text-white/40"
+              className="w-full rounded-xl bg-input-bg border border-input-border px-4 py-3 outline-none placeholder:text-input-placeholder text-input-text focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
             />
 
             {/* Dropdown */}
             {open && results.length > 0 && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-white/10 bg-[#0B1026]/95 backdrop-blur-xl shadow-xl overflow-hidden">
+              <div className="absolute z-50 mt-2 w-full rounded-xl border border-border bg-surface backdrop-blur-xl shadow-elevated overflow-hidden">
                 {results.map((skill) => (
                   <button
                     type="button"
                     key={skill}
                     onClick={() => addSkill(skill)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-white/10"
+                    className="w-full text-left px-4 py-2 text-sm text-body hover:bg-surface-hover transition-colors"
                   >
                     {skill}
                   </button>
@@ -94,29 +92,29 @@ export default function SkillsPage() {
             {selected.map((skill) => (
               <span
                 key={skill}
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-sm"
+                className="inline-flex items-center gap-2 rounded-full bg-tag-bg border border-tag-border px-3 py-1 text-sm text-tag-text"
               >
-                {skill}
-                <button
-                  type="button"
-                  onClick={() => removeSkill(skill)}
-                  className="text-white/70 hover:text-white"
-                  aria-label={`Remove ${skill}`}
-                >
-                  ×
-                </button>
-              </span>
+              {skill}
+              <button
+                type="button"
+                onClick={() => removeSkill(skill)}
+                className="text-faint hover:text-heading transition-colors"
+                aria-label={`Remove ${skill}`}
+              >
+                ×
+              </button>
+            </span>
             ))}
           </div>
 
-          <p className="mt-3 text-xs text-white/60">
+          <p className="mt-3 text-xs text-muted">
             Selected: {selected.length} / 4 minimum
           </p>
 
           <button
             type="button"
             onClick={onNext}
-            className="mt-6 w-full rounded-xl bg-white text-[#070A18] py-3 font-semibold"
+            className="mt-6 w-full rounded-xl bg-btn-primary-bg text-btn-primary-text py-3 font-semibold hover:bg-btn-primary-hover transition-all shadow-glow-primary hover:shadow-[0_0_30px_var(--btn-primary-hover)]"
           >
             Next →
           </button>

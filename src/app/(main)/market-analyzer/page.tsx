@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import {
-  LineChart,
+  LineChart as ReLineChart,
   Line,
   XAxis,
   YAxis,
@@ -11,15 +11,19 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import { 
+  TrendingUp, 
+  Briefcase,
+  AlertCircle,
+  GitCompare
+} from "lucide-react";
 
 import { GlassCard } from "@/components/glass/GlassCard";
 import { apiFetch } from "@/lib/api/client";
 import { tokenStore } from "@/lib/auth/tokenStore";
 
-// If your endpoints.ts already has these, you can use those instead.
-// Keeping inline so this page works even if endpoints.ts isn't updated.
-const MARKET_ENDPOINT = "/market-analyzer"; // GET ?job_title=...
-const RECS_ENDPOINT = "/recommendations"; // GET (auth)
+const MARKET_ENDPOINT = "/market-analyzer";
+const RECS_ENDPOINT = "/recommendations";
 
 // ----- Types -----
 type TrendPoint = { date: string; count: number };
@@ -40,7 +44,7 @@ type RecommendationItem = {
   explanation?: string;
 };
 
-// ----- Mock fallback (so UI always shows for demo) -----
+// ----- Mock fallback -----
 const FALLBACK_MARKET: MarketResponse = {
   job_title: "Data Analyst",
   job_posting_count: 1240,
@@ -92,7 +96,6 @@ export default function MarketAnalyzerPage() {
       setLoading(true);
       setError(null);
 
-      // 1) Market data (can be public or private depending on backend)
       try {
         const m = (await apiFetch(
           `${MARKET_ENDPOINT}?job_title=${encodeURIComponent("Data Analyst")}`,
@@ -112,13 +115,9 @@ export default function MarketAnalyzerPage() {
         }
       }
 
-      // 2) Recommendations (private/auth)
       try {
         const r = (await apiFetch(RECS_ENDPOINT, { method: "GET", auth: true })) as any;
-
-        // Support either: array OR {data: array}
         const recList: RecommendationItem[] = Array.isArray(r) ? r : (r?.data ?? []);
-
         if (mounted && recList?.length) setRecs(recList);
         else if (mounted) setRecs(FALLBACK_RECS);
       } catch {
@@ -129,9 +128,7 @@ export default function MarketAnalyzerPage() {
     }
 
     load();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   const trend = market.trend_series ?? FALLBACK_MARKET.trend_series!;
@@ -145,165 +142,166 @@ export default function MarketAnalyzerPage() {
   }
 
   return (
-    <main className="bg-gradient-soft min-h-screen px-6 py-10">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Market Analysis</h1>
-
-          <button
-            onClick={signOut}
-            className="rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/15"
-          >
-            Sign out
-          </button>
-        </div>
-
-        {error && (
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80">
-            {error}
+    <div className="mx-auto max-w-6xl space-y-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-sm font-medium mb-4">
+            <TrendingUp className="w-4 h-4" />
+            <span>Market Intelligence</span>
           </div>
-        )}
-
-        {/* Top cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <GlassCard>
-            <div className="text-sm text-white/70">Job postings</div>
-            <div className="mt-2 text-2xl font-semibold">
-              {loading ? "…" : postingCount}
-            </div>
-          </GlassCard>
-
-          <GlassCard>
-            <div className="text-sm text-white/70">Top skill</div>
-            <div className="mt-2 text-2xl font-semibold">
-              {loading ? "…" : (topSkills?.[0]?.skill ?? "—")}
-            </div>
-          </GlassCard>
-
-          <GlassCard>
-            <div className="text-sm text-white/70">Trend (last 5 months)</div>
-            <div className="mt-2 text-2xl font-semibold">
-              {loading ? "…" : (trend?.[trend.length - 1]?.count ?? "—")}
-            </div>
-          </GlassCard>
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)]">
+            Market Analysis
+          </h1>
+          <p className="text-muted mt-2 text-lg">
+            Real-time hiring trends and skill saturation data.
+          </p>
         </div>
+      </div>
 
-        {/* Chart + top skills */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <GlassCard className="md:col-span-2">
-            <div className="text-sm text-white/70">Trend for</div>
-            <div className="text-lg font-semibold">{jobTitle}</div>
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-500 backdrop-blur-md">
+          {error}
+        </div>
+      )}
 
-            <div className="mt-4" style={{ height: 280 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff14" />
-                  <XAxis dataKey="date" tick={{ fill: "#cbd5e1" }} />
-                  <YAxis tick={{ fill: "#cbd5e1" }} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#60f2f2"
-                    strokeWidth={3}
-                    dot={{ r: 3 }}
+      {/* Top metrics */}
+      <div className="grid gap-5 md:grid-cols-3">
+        <GlassCard className="hover:border-border-hover transition-all">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Active Postings</div>
+          <div className="mt-2 text-3xl font-black italic text-heading">
+            {loading ? "…" : postingCount.toLocaleString()}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="hover:border-border-hover transition-all">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Most Demanded</div>
+          <div className="mt-2 text-3xl font-black italic text-accent-primary">
+            {loading ? "…" : (topSkills?.[0]?.skill ?? "—")}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="hover:border-border-hover transition-all">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Monthly Volume</div>
+          <div className="mt-2 text-3xl font-black italic text-accent-secondary">
+            {loading ? "…" : (trend?.[trend.length - 1]?.count ?? "—")}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Chart + top skills */}
+      <div className="grid gap-8 md:grid-cols-3">
+        <GlassCard className="md:col-span-2">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Trend Dataset</div>
+              <div className="text-xl font-bold text-heading mt-1">{jobTitle}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent-primary" />
+              <span className="text-xs text-muted font-medium tracking-wide">Volume</span>
+            </div>
+          </div>
+
+          <div className="mt-4" style={{ height: 320 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ReLineChart data={trend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="6 6" stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--surface-inset)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    color: 'var(--heading)',
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="var(--accent-primary)"
+                  strokeWidth={4}
+                  dot={{ r: 4, fill: 'var(--accent-primary)', strokeWidth: 2, stroke: 'var(--background)' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                />
+              </ReLineChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint mb-6">Market Saturation</div>
+
+          <div className="space-y-4">
+            {topSkills.map((s, idx) => (
+              <div key={s.skill} className="group flex flex-col gap-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-bold text-muted group-hover:text-heading transition-colors">{s.skill}</span>
+                  <span className="text-faint font-medium">{s.count} mentions</span>
+                </div>
+                <div className="h-1.5 w-full bg-surface-inset rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-accent-primary/40 rounded-full group-hover:bg-accent-primary transition-all duration-500"
+                    style={{ width: `${(s.count / topSkills[0].count) * 100}%` }}
                   />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </GlassCard>
-
-          <GlassCard>
-            <div className="text-sm text-white/70">Top Skills</div>
-
-            <div className="mt-3 space-y-2">
-              {topSkills.map((s) => (
-                <div key={s.skill} className="flex items-center justify-between">
-                  <div className="text-sm">{s.skill}</div>
-                  <div className="text-sm font-semibold">{s.count}</div>
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-6 text-sm text-white/60">
-              Personalized insights shown below.
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* Recommendations */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Recommended roles for you</h2>
-          <div className="text-sm text-white/60">Based on your profile & market data</div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-3">
-            {(recs?.length ? recs : FALLBACK_RECS).map((r) => (
-              <GlassCard key={r.role_id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-semibold">{r.role_title}</div>
-                  <div className="text-sm text-white/70">Fit: {r.fit_score}%</div>
-                </div>
-
-                <div className="text-sm text-white/70">{r.explanation}</div>
-
-                <div className="pt-2">
-                  <div className="text-xs text-white/60">Missing skills</div>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {(r.missing_skills ?? []).length ? (
-                      r.missing_skills!.map((s) => (
-                        <span
-                          key={s}
-                          className="rounded-full bg-white/10 border border-white/10 px-2 py-1 text-xs"
-                        >
-                          {s}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-white/60">None</span>
-                    )}
-                  </div>
-                </div>
-              </GlassCard>
+              </div>
             ))}
           </div>
 
-          <div className="space-y-3">
-            <GlassCard>
-              <div className="text-sm text-white/70">Quick Actions</div>
-              <div className="mt-3 flex flex-col gap-2">
-                <button
-                  onClick={() => router.push("/profile")}
-                  className="rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
-                >
-                  Edit Profile
-                </button>
-                <button
-                  onClick={() => router.push("/jobs")}
-                  className="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/10"
-                >
-                  Browse Jobs
-                </button>
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              <div className="text-sm text-white/70">Market Snapshot</div>
-              <div className="mt-3 space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <div className="text-white/70">Top hiring cities</div>
-                  <div>San Francisco, Seattle</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-white/70">Avg salary</div>
-                  <div>$90k–$120k</div>
-                </div>
-              </div>
-            </GlassCard>
+          <div className="mt-8 p-4 rounded-xl bg-badge-info-bg border border-badge-info-border text-xs text-badge-info-text leading-relaxed font-medium">
+            Personalized recommendations are generated by cross-referencing these skills with your profile.
           </div>
+        </GlassCard>
+      </div>
+
+      {/* Recommendations */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-2xl font-bold text-heading">Personalized Trajectory</h2>
+          <div className="text-sm text-muted font-medium">Profile Match Consensus</div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {(recs?.length ? recs : FALLBACK_RECS).map((r) => (
+            <GlassCard key={r.role_id} className="group hover:bg-surface-hover hover:border-border-hover transition-all duration-300">
+              <div className="flex justify-between gap-6">
+                <div className="flex-1">
+                  <div className="text-xl font-bold text-heading group-hover:text-accent-primary transition-colors">{r.role_title}</div>
+                  <p className="mt-2 text-sm text-muted leading-relaxed">{r.explanation}</p>
+                  
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    {(r.missing_skills ?? []).map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-lg bg-tag-bg border border-tag-border px-3 py-1 text-xs text-tag-text font-medium"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col items-center justify-center min-w-[80px]">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-faint mb-1">Fit</div>
+                  <div className="text-4xl font-black italic tracking-tighter text-accent-primary">
+                    {r.fit_score}%
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+          ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
