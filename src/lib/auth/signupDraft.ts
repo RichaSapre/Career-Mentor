@@ -1,33 +1,40 @@
+import type { Experience, Skill, SalaryRange } from "@/lib/api/types";
+
 export type SignupDraft = {
-  full_name?: string;
+  fullName?: string;
   email?: string;
   password?: string;
-  profilePhoto?: string | null; 
+  profilePhoto?: string | null;
 
-  education?: Array<{
-    courseName?: string;
-    schoolName?: string;
-    concentration?: string;
-    gpa?: string;
-    gradYear?: string;
-  }>;
+  // Education (API: degreeLevel, major, university, graduationDate, gpa)
+  degreeLevel?: string;
+  major?: string;
+  university?: string;
+  graduationDate?: string;
+  gpa?: number;
 
-  experiences?: Array<{
-    title?: string;
-    company?: string;
-    description?: string;
-    duration?: string;
-    techStack?: string[];
-    startDate?: string;   // ✅ important
-    isCurrent?: boolean;
-  }>;
+  // Citizenship & Sponsorship
+  citizenshipStatus?: string;
+  needsSponsorship?: boolean;
 
-  skills?: Array<
-    | string
-    | {
-        skill_name?: string;
-      }
-  >;
+  // Skills (API: { skillName, proficiencyLevel }[])
+  skills?: Skill[];
+
+  // Experiences
+  experiences?: Experience[];
+
+  // Career Preferences
+  targetRoles?: string[];
+  preferredLocations?: string[];
+  remotePreference?: string;
+  industryPreferences?: string[];
+  relocationWillingness?: boolean;
+
+  // Salary & Links
+  salaryRange?: SalaryRange;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
 };
 
 const KEY = "signupDraft";

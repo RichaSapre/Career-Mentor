@@ -4,16 +4,34 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { TECH_SKILLS } from "@/lib/data/techSkills";
+import { PROFICIENCY_LEVELS } from "@/lib/data/constants";
+import { signupDraft } from "@/lib/auth/signupDraft";
+import type { Skill } from "@/lib/api/types";
 
 export default function SkillsPage() {
   const router = useRouter();
 
   const [query, setQuery] = React.useState("");
   const [open, setOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string[]>([]);
+  const [selected, setSelected] = React.useState<Skill[]>([]);
+
+  React.useEffect(() => {
+    const draft = signupDraft.get();
+    if (!draft.email || !draft.password) router.replace("/signup");
+    if (!draft.degreeLevel || !draft.university) router.replace("/education");
+    if (draft.skills?.length) {
+      setSelected(
+        draft.skills.map((s) =>
+          typeof s === "string"
+            ? { skillName: s, proficiencyLevel: 3 }
+            : { skillName: s.skillName ?? "", proficiencyLevel: s.proficiencyLevel ?? 3 }
+        )
+      );
+    }
+  }, [router]);
 
   const normalizedSelected = React.useMemo(
-    () => new Set(selected.map((s) => s.toLowerCase())),
+    () => new Set(selected.map((s) => s.skillName.toLowerCase())),
     [selected]
   );
 
@@ -28,16 +46,24 @@ export default function SkillsPage() {
     return filtered.slice(0, 12);
   }, [query, normalizedSelected]);
 
-  function addSkill(skill: string) {
-    const key = skill.toLowerCase();
+  function addSkill(skillName: string) {
+    const key = skillName.toLowerCase();
     if (normalizedSelected.has(key)) return;
-    setSelected((prev) => [...prev, skill]);
+    setSelected((prev) => [...prev, { skillName, proficiencyLevel: 3 }]);
     setQuery("");
     setOpen(false);
   }
 
-  function removeSkill(skill: string) {
-    setSelected((prev) => prev.filter((s) => s !== skill));
+  function removeSkill(skillName: string) {
+    setSelected((prev) => prev.filter((s) => s.skillName !== skillName));
+  }
+
+  function setProficiency(skillName: string, level: number) {
+    setSelected((prev) =>
+      prev.map((s) =>
+        s.skillName === skillName ? { ...s, proficiencyLevel: level } : s
+      )
+    );
   }
 
   function onNext() {
@@ -46,7 +72,8 @@ export default function SkillsPage() {
       return;
     }
 
-    router.push("/dashboard");
+    signupDraft.set({ skills: selected });
+    router.push("/citizenship");
   }
 
   return (
@@ -55,7 +82,7 @@ export default function SkillsPage() {
         <h1 className="text-2xl font-semibold mb-4 text-heading">Skills</h1>
 
         <GlassCard>
-          <label className="text-sm text-muted">Add skills (min 4)</label>
+          <label className="text-sm text-muted">Add skills (min 4) with proficiency level</label>
 
           {/* Search input */}
           <div className="relative mt-2">
@@ -87,23 +114,39 @@ export default function SkillsPage() {
             )}
           </div>
 
-          {/* Selected chips */}
-          <div className="mt-4 flex flex-wrap gap-2">
+          {/* Selected skills with proficiency */}
+          <div className="mt-4 space-y-3">
             {selected.map((skill) => (
-              <span
-                key={skill}
-                className="inline-flex items-center gap-2 rounded-full bg-tag-bg border border-tag-border px-3 py-1 text-sm text-tag-text"
+              <div
+                key={skill.skillName}
+                className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl bg-surface-inset border border-border p-3"
               >
-              {skill}
-              <button
-                type="button"
-                onClick={() => removeSkill(skill)}
-                className="text-faint hover:text-heading transition-colors"
-                aria-label={`Remove ${skill}`}
-              >
-                ×
-              </button>
-            </span>
+                <div className="flex items-center justify-between flex-1">
+                  <span className="font-medium text-heading">{skill.skillName}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeSkill(skill.skillName)}
+                    className="text-faint hover:text-red-400 transition-colors px-1"
+                    aria-label={`Remove ${skill.skillName}`}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted">Level:</span>
+                  <select
+                    value={skill.proficiencyLevel ?? 3}
+                    onChange={(e) => setProficiency(skill.skillName, Number(e.target.value))}
+                    className="rounded-lg bg-input-bg border border-input-border px-2 py-1 text-sm text-input-text"
+                  >
+                    {PROFICIENCY_LEVELS.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label} ({p.value})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             ))}
           </div>
 
@@ -119,9 +162,6 @@ export default function SkillsPage() {
             Next →
           </button>
         </GlassCard>
-
-        {/* click outside to close dropdown */}
-        
       </div>
     </main>
   );

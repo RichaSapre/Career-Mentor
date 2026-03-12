@@ -9,7 +9,7 @@ export const API = {
 
   updateProfile: "/auth/signup", // complete profile can be reused
   
-  marketAnalyzer: "/market-analyzer",
+  marketAnalyzer: "/market/analyze",
   recommendedRoles: "/recommendations",
   skillOntology: "/skills"
 };

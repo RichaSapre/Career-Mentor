@@ -16,14 +16,19 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { cn } from "@/lib/utils";
+import { useMe } from "@/features/auth/hooks";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { data: user } = useMe();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const userName = user?.fullName ?? (user as any)?.full_name ?? "User";
+  const targetRole = user?.targetRoles?.[0] ?? (user as any)?.target_roles?.[0] ?? "Data Analyst";
 
   const recommendations = [
     { title: "Data Analyst", fit: 85, skills: ["SQL", "Python", "Tableau"], trend: "+12%" },
@@ -60,11 +65,11 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
           <h1 className="text-3xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] tracking-tight italic">
-            Welcome back, User
+            Welcome back, {userName}
           </h1>
           <p className="text-muted mt-2 flex items-center gap-2 text-lg font-bold italic">
             <SparkleIcon className="w-4 h-4 text-accent-primary" />
-            You&apos;re 75% of the way to your ideal Data Analyst role.
+            You&apos;re 75% of the way to your ideal {targetRole} role.
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm font-black bg-surface border border-border px-5 py-2.5 rounded-full text-heading backdrop-blur-xl shadow-card transition-all italic">
@@ -122,7 +127,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Target Role</div>
-            <div className="text-xl font-bold text-heading tracking-tight">{mounted ? "Data Analyst" : "..."}</div>
+            <div className="text-xl font-bold text-heading tracking-tight">{mounted ? targetRole : "..."}</div>
           </div>
         </GlassCard>
 

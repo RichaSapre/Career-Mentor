@@ -23,7 +23,7 @@ export default function ExperiencePage() {
     resolver: zodResolver(experienceSchema),
     defaultValues: {
       hasExperience: false,
-      experiences: [{ title: "", company: "", description: "", month: "", year: "", techStack: "" }],
+      experiences: [{ title: "", company: "", description: "", month: "", year: "", techStack: "", duration: "", isCurrent: false }],
     },
   });
 
@@ -37,6 +37,7 @@ export default function ExperiencePage() {
   useEffect(() => {
     const draft = signupDraft.get();
     if (!draft.email || !draft.password) router.replace("/signup");
+    if (!draft.degreeLevel || !draft.university) router.replace("/education");
 
     if (draft.experiences?.length) {
       form.setValue("hasExperience", true);
@@ -49,6 +50,8 @@ export default function ExperiencePage() {
           month: (e.startDate?.slice(5, 7) ?? "").replace(/^0/, "") || "",
           year: e.startDate?.slice(0, 4) ?? "",
           techStack: (e.techStack ?? []).join(", "),
+          duration: e.duration ?? "",
+          isCurrent: e.isCurrent ?? false,
         }))
       );
     }
@@ -61,21 +64,25 @@ export default function ExperiencePage() {
       return;
     }
 
-    const mapped: Experience[] = values.experiences.map((e) => {
+    const mapped: Experience[] = values.experiences.map((e, idx) => {
       const mm = String(e.month).padStart(2, "0");
-      const startDate = `${e.year}-${mm}-01`;
+      const startDate = `${e.year}-${mm}-15`;
       const techStack = e.techStack
         ? e.techStack.split(",").map((s) => s.trim()).filter(Boolean)
         : undefined;
+      const yearsAgo = e.year ? new Date().getFullYear() - parseInt(e.year, 10) : 0;
+      const computedDuration = yearsAgo >= 1 ? `${yearsAgo} year${yearsAgo > 1 ? "s" : ""}` : "Less than 1 year";
+      const duration = e.duration?.trim() || computedDuration;
+      const isCurrent = e.isCurrent ?? (idx === values.experiences.length - 1);
 
       return {
         title: e.title!.trim(),
         company: e.company!.trim(),
         description: e.description!.trim(),
-        duration: `${e.month}/${e.year}`,
+        duration,
         techStack,
         startDate,
-        isCurrent: false,
+        isCurrent,
       };
     });
 
@@ -110,7 +117,7 @@ export default function ExperiencePage() {
             onClick={() => {
               form.setValue("hasExperience", true);
               if (!fields.length) {
-                replace([{ title: "", company: "", description: "", month: "", year: "", techStack: "" }]);
+                replace([{ title: "", company: "", description: "", month: "", year: "", techStack: "", duration: "", isCurrent: false }]);
               }
             }}
             className={`flex-1 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
@@ -201,6 +208,21 @@ export default function ExperiencePage() {
                 <Label>Tech Stack (comma separated)</Label>
                 <Input {...form.register(`experiences.${idx}.techStack`)} placeholder="React, Node.js, SQL" />
               </div>
+
+              <div className="mt-3 flex items-center gap-4">
+                <div className="flex-1">
+                  <Label>Duration (e.g. 2 years)</Label>
+                  <Input {...form.register(`experiences.${idx}.duration`)} placeholder="2 years" />
+                </div>
+                <label className="flex items-center gap-2 mt-6 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...form.register(`experiences.${idx}.isCurrent`)}
+                    className="rounded border-border"
+                  />
+                  <span className="text-sm text-body">Current role</span>
+                </label>
+              </div>
             </div>
           ))}
 
@@ -214,7 +236,7 @@ export default function ExperiencePage() {
               type="button"
               variant="ghost"
               className="w-full"
-              onClick={() => append({ title: "", company: "", description: "", month: "", year: "", techStack: "" })}
+              onClick={() => append({ title: "", company: "", description: "", month: "", year: "", techStack: "", duration: "", isCurrent: false })}
             >
               + Add another experience
             </Button>

@@ -6,6 +6,9 @@ const steps = [
   { href: "/education", label: "Education" },
   { href: "/experience", label: "Experience" },
   { href: "/skills", label: "Skills" },
+  { href: "/citizenship", label: "Citizenship" },
+  { href: "/career-preferences", label: "Career" },
+  { href: "/salary-links", label: "Salary & Links" },
 ];
 
 export default function OnboardingLayout({
@@ -18,7 +21,7 @@ export default function OnboardingLayout({
 
   return (
     <main className="bg-gradient-soft min-h-screen px-5 py-10">
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto max-w-lg">
         <div className="mb-6">
           <div className="text-xs text-muted">Onboarding</div>
           <div className="mt-1 flex items-center gap-2">
