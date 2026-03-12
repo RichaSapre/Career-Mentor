@@ -1,16 +1,16 @@
 import { z } from "zod";
 
 export const educationSchema = z.object({
-  courseName: z.string().min(2, "Course name is required"),
-  concentration: z.string().min(2, "Concentration is required"),
-  schoolName: z.string().min(2, "School name is required"),
+  degreeLevel: z.string().min(1, "Degree level is required"),
+  major: z.string().min(2, "Major/Concentration is required"),
+  university: z.string().min(2, "University name is required"),
+  graduationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   gpa: z
-    .string()
+    .number()
     .optional()
-    .refine((v) => !v || /^\d(\.\d+)?$/.test(v), {
-      message: "Enter a valid GPA",
+    .refine((v) => v === undefined || (v >= 0 && v <= 4), {
+      message: "GPA must be between 0 and 4",
     }),
-  gradYear: z.string().regex(/^\d{4}$/, "Use YYYY"),
 });
 
 export const experienceItemSchema = z.object({
@@ -20,6 +20,8 @@ export const experienceItemSchema = z.object({
   month: z.string().min(1, "Month is required"),
   year: z.string().regex(/^\d{4}$/, "Use YYYY"),
   techStack: z.string().optional(),
+  duration: z.string().optional(),
+  isCurrent: z.boolean().optional(),
 });
 
 export const experienceSchema = z
@@ -34,6 +36,8 @@ export const experienceSchema = z
           month: z.string().optional(),
           year: z.string().optional(),
           techStack: z.string().optional(),
+          duration: z.string().optional(),
+          isCurrent: z.boolean().optional(),
         })
       )
       .default([]),

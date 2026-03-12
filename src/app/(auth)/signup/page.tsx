@@ -26,7 +26,7 @@ export default function SignupPage() {
 
   function onSubmit(values: FormValues) {
     signupDraft.set({
-      full_name: values.fullName,
+      fullName: values.fullName,
       email: values.email,
     });
 

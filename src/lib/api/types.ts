@@ -79,3 +79,28 @@ export type MarketAnalyzerResponse = {
   trendSeries: { date: string; count: number }[];
   topSkills: { skill: string; count: number }[]; // top 5
 };
+
+/** Complete signup payload matching backend API */
+export type SignupPayload = {
+  email: string;
+  password: string;
+  fullName: string;
+  degreeLevel: string;
+  major: string;
+  university: string;
+  graduationDate: string;
+  gpa?: number;
+  citizenshipStatus: string;
+  needsSponsorship: boolean;
+  skills: { skillName: string; proficiencyLevel: number }[];
+  experiences: Experience[];
+  targetRoles: string[];
+  preferredLocations: string[];
+  remotePreference: string;
+  industryPreferences: string[];
+  salaryRange?: { min: number; max: number; currency: string };
+  relocationWillingness: boolean;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+};

@@ -1,5 +1,6 @@
 const ACCESS = "cm_access";
 const REFRESH = "cm_refresh";
+export const LOGIN_EMAIL_KEY = "cm_login_email";
 
 export const tokenStore = {
   getAccess(): string | null {
@@ -18,5 +19,6 @@ export const tokenStore = {
     if (typeof window === "undefined") return;
     localStorage.removeItem(ACCESS);
     localStorage.removeItem(REFRESH);
+    localStorage.removeItem(LOGIN_EMAIL_KEY);
   },
 };

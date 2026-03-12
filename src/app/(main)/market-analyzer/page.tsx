@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
+import React, { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   LineChart as ReLineChart,
   Line,
@@ -11,29 +11,27 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { 
-  TrendingUp, 
-  Briefcase,
-  AlertCircle,
-  GitCompare
-} from "lucide-react";
+import { TrendingUp, Search } from "lucide-react";
 
 import { GlassCard } from "@/components/glass/GlassCard";
 import { apiFetch } from "@/lib/api/client";
+import { API } from "@/lib/api/endpoints";
 import { tokenStore } from "@/lib/auth/tokenStore";
-
-const MARKET_ENDPOINT = "/market-analyzer";
-const RECS_ENDPOINT = "/recommendations";
 
 // ----- Types -----
 type TrendPoint = { date: string; count: number };
 type TopSkill = { skill: string; count: number };
 
 type MarketResponse = {
+  role?: string;
   job_title?: string;
+  jobTitle?: string;
   job_posting_count?: number;
+  jobPostingCount?: number;
   trend_series?: TrendPoint[];
+  trendSeries?: TrendPoint[];
   top_skills?: TopSkill[];
+  topSkills?: TopSkill[];
 };
 
 type RecommendationItem = {
@@ -81,34 +79,78 @@ const FALLBACK_RECS: RecommendationItem[] = [
   },
 ];
 
-export default function MarketAnalyzerPage() {
-  const router = useRouter();
+const SUGGESTED_ROLES = ["Data Analyst", "Software Engineer", "Product Manager", "Data Scientist", "DevOps Engineer"];
 
+function MarketAnalyzerContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleFromUrl = searchParams.get("role") || "Data Analyst";
+
+  const [roleInput, setRoleInput] = React.useState(roleFromUrl);
   const [loading, setLoading] = React.useState(true);
   const [market, setMarket] = React.useState<MarketResponse>(FALLBACK_MARKET);
   const [recs, setRecs] = React.useState<RecommendationItem[]>(FALLBACK_RECS);
   const [error, setError] = React.useState<string | null>(null);
 
+  async function fetchMarketData(role: string) {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const m = (await apiFetch(API.marketAnalyzer, {
+        method: "POST",
+        body: JSON.stringify({ role: role.trim() }),
+        auth: true,
+      })) as MarketResponse;
+
+      if (m) {
+        const trendData = m.trend_series ?? m.trendSeries;
+        const skillsData = m.top_skills ?? m.topSkills;
+        setMarket({
+          ...FALLBACK_MARKET,
+          ...m,
+          job_title: m.job_title ?? m.jobTitle ?? m.role ?? role,
+          job_posting_count: m.job_posting_count ?? m.jobPostingCount,
+          trend_series: trendData?.length ? trendData : FALLBACK_MARKET.trend_series,
+          top_skills: skillsData?.length ? skillsData : FALLBACK_MARKET.top_skills,
+        });
+      }
+    } catch {
+      setMarket(FALLBACK_MARKET);
+      setError("Market API not available, showing demo data.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   React.useEffect(() => {
     let mounted = true;
+    const role = roleFromUrl || roleInput.trim() || "Data Analyst";
+    setRoleInput(role);
 
     async function load() {
       setLoading(true);
       setError(null);
-
       try {
-        const m = (await apiFetch(
-          `${MARKET_ENDPOINT}?job_title=${encodeURIComponent("Data Analyst")}`,
-          { method: "GET", auth: false }
-        )) as MarketResponse;
+        const m = (await apiFetch(API.marketAnalyzer, {
+          method: "POST",
+          body: JSON.stringify({ role }),
+          auth: true,
+        })) as MarketResponse;
 
-        if (mounted && m) setMarket({
-          ...FALLBACK_MARKET,
-          ...m,
-          trend_series: m.trend_series?.length ? m.trend_series : FALLBACK_MARKET.trend_series,
-          top_skills: m.top_skills?.length ? m.top_skills : FALLBACK_MARKET.top_skills,
-        });
-      } catch (e: any) {
+        if (mounted && m) {
+          const trendData = m.trend_series ?? m.trendSeries;
+          const skillsData = m.top_skills ?? m.topSkills;
+          setMarket({
+            ...FALLBACK_MARKET,
+            ...m,
+            job_title: m.job_title ?? m.jobTitle ?? m.role ?? role,
+            job_posting_count: m.job_posting_count ?? m.jobPostingCount,
+            trend_series: trendData?.length ? trendData : FALLBACK_MARKET.trend_series,
+            top_skills: skillsData?.length ? skillsData : FALLBACK_MARKET.top_skills,
+          });
+        }
+      } catch {
         if (mounted) {
           setMarket(FALLBACK_MARKET);
           setError("Market API not available, showing demo data.");
@@ -116,7 +158,7 @@ export default function MarketAnalyzerPage() {
       }
 
       try {
-        const r = (await apiFetch(RECS_ENDPOINT, { method: "GET", auth: true })) as any;
+        const r = (await apiFetch(API.recommendedRoles, { method: "GET", auth: true })) as any;
         const recList: RecommendationItem[] = Array.isArray(r) ? r : (r?.data ?? []);
         if (mounted && recList?.length) setRecs(recList);
         else if (mounted) setRecs(FALLBACK_RECS);
@@ -129,12 +171,18 @@ export default function MarketAnalyzerPage() {
 
     load();
     return () => { mounted = false; };
-  }, []);
+  }, [roleFromUrl]);
 
   const trend = market.trend_series ?? FALLBACK_MARKET.trend_series!;
   const topSkills = market.top_skills ?? FALLBACK_MARKET.top_skills!;
   const postingCount = market.job_posting_count ?? FALLBACK_MARKET.job_posting_count!;
-  const jobTitle = market.job_title ?? FALLBACK_MARKET.job_title!;
+  const jobTitle = market.job_title ?? market.role ?? FALLBACK_MARKET.job_title!;
+
+  // Average monthly job volume from trend
+  const avgMonthly =
+    trend?.length > 0
+      ? Math.round(trend.reduce((a, t) => a + t.count, 0) / trend.length)
+      : postingCount;
 
   function signOut() {
     tokenStore.clear();
@@ -156,6 +204,47 @@ export default function MarketAnalyzerPage() {
             Real-time hiring trends and skill saturation data.
           </p>
         </div>
+
+        {/* Role search */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+            <input
+              type="text"
+              value={roleInput}
+              onChange={(e) => setRoleInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchMarketData(roleInput))}
+              placeholder="e.g. Software Engineer"
+              className="w-full sm:w-64 pl-12 pr-4 py-3 rounded-xl bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchMarketData(roleInput)}
+            disabled={loading || !roleInput.trim()}
+            className="px-6 py-3 rounded-xl bg-btn-primary-bg text-btn-primary-text font-semibold hover:bg-btn-primary-hover transition-all disabled:opacity-60"
+          >
+            {loading ? "Analyzing…" : "Analyze"}
+          </button>
+        </div>
+      </div>
+
+      {/* Quick role buttons */}
+      <div className="flex flex-wrap gap-2">
+        {SUGGESTED_ROLES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => {
+              setRoleInput(r);
+              fetchMarketData(r);
+            }}
+            disabled={loading}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-inset border border-border hover:border-accent-primary hover:text-accent-primary transition-all disabled:opacity-60"
+          >
+            {r}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -181,9 +270,9 @@ export default function MarketAnalyzerPage() {
         </GlassCard>
 
         <GlassCard className="hover:border-border-hover transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Monthly Volume</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Avg Monthly Jobs</div>
           <div className="mt-2 text-3xl font-black italic text-accent-secondary">
-            {loading ? "…" : (trend?.[trend.length - 1]?.count ?? "—")}
+            {loading ? "…" : avgMonthly?.toLocaleString() ?? "—"}
           </div>
         </GlassCard>
       </div>
@@ -303,5 +392,17 @@ export default function MarketAnalyzerPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MarketAnalyzerPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex items-center justify-center text-muted">
+        <span className="animate-pulse">Loading market analysis...</span>
+      </div>
+    }>
+      <MarketAnalyzerContent />
+    </Suspense>
   );
 }

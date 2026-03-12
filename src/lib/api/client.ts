@@ -95,6 +95,10 @@ function isAuthPath(path: string) {
 function mockResponseFor<T>(path: string): T {
   // AUTH
   if (path === API.loginSendOtp) return { ok: true } as unknown as T;
+  if (path === API.signupComplete || path === API.signupMinimal) {
+    tokenStore.set(demoTokens);
+    return demoTokens as unknown as T;
+  }
   if (path === API.verifyLoginOtp) {
     tokenStore.set(demoTokens);
     return demoTokens as unknown as T;
@@ -117,9 +121,42 @@ function mockResponseFor<T>(path: string): T {
   return {} as T;
 }
 
+type RefreshResponse = { accessToken?: string; refreshToken?: string; tokens?: Tokens };
+
+async function doRefreshToken(): Promise<boolean> {
+  const refresh = tokenStore.getRefresh();
+  if (!refresh) return false;
+
+  try {
+    const res = await fetch(`${BASE_URL}${API.refreshToken}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: refresh }),
+    });
+
+    if (!res.ok) return false;
+
+    const data = (await res.json()) as RefreshResponse;
+    const accessToken = data?.accessToken ?? data?.tokens?.accessToken;
+    const refreshToken = data?.refreshToken ?? data?.tokens?.refreshToken;
+
+    if (accessToken && refreshToken) {
+      tokenStore.set({ accessToken, refreshToken });
+      return true;
+    }
+  } catch {
+    // refresh failed
+  }
+  // Session expired: clear tokens so user is prompted to log in again
+  tokenStore.clear();
+  if (typeof window !== "undefined") window.location.replace("/welcome");
+  return false;
+}
+
 async function tryRealFetch<T>(
   path: string,
-  options: RequestInit & { auth?: boolean } = {}
+  options: RequestInit & { auth?: boolean } = {},
+  isRetry = false
 ): Promise<T> {
   const { auth = true, ...rest } = options;
 
@@ -132,6 +169,14 @@ async function tryRealFetch<T>(
   }
 
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });
+
+  // On 401 Unauthorized: try refresh token, then retry (only for auth requests, not the refresh endpoint itself)
+  if (res.status === 401 && auth && path !== API.refreshToken && !isRetry) {
+    const refreshed = await doRefreshToken();
+    if (refreshed) {
+      return tryRealFetch<T>(path, options, true);
+    }
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -159,6 +204,15 @@ export async function apiFetch<T>(
   try {
     return await tryRealFetch<T>(path, options);
   } catch (e) {
+    // Never fall back to mock for auth - user must see real errors (wrong OTP, signup failed, etc.)
+    if (
+      path === API.loginSendOtp ||
+      path === API.verifyLoginOtp ||
+      path === API.signupComplete ||
+      path === API.signupMinimal
+    ) {
+      throw e;
+    }
     // fallback for UI demo (keeps navigation working)
     console.warn("[apiFetch] Falling back to demo response for:", path, e);
     if (!tokenStore.getAccess() && isAuthPath(path)) tokenStore.set(demoTokens);

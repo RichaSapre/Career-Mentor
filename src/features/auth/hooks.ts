@@ -7,10 +7,11 @@ import type { Tokens, UserProfile } from "@/lib/api/types";
 import { tokenStore } from "@/lib/auth/tokenStore";
 
 export function useMe(enabled = true) {
+  const hasToken = typeof window !== "undefined" && !!tokenStore.getAccess();
   return useQuery({
     queryKey: ["me"],
     queryFn: () => apiFetch<UserProfile>(API.getUserDetails, { method: "GET" }),
-    enabled,
+    enabled: enabled && hasToken,
   });
 }
 

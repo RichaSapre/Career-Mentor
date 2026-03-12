@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
-import { fakeAuth } from "@/lib/auth/fakeAuth";
+import { tokenStore } from "@/lib/auth/tokenStore";
+import { apiFetch } from "@/lib/api/client";
+import { API } from "@/lib/api/endpoints";
 
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -32,9 +34,21 @@ export function SideNav() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  function signOut() {
-    fakeAuth.logout();
-    router.push("/welcome");
+  async function signOut() {
+    const accessToken = tokenStore.getAccess();
+    try {
+      if (accessToken) {
+        await apiFetch(API.logout, {
+          method: "POST",
+          auth: true,
+        });
+      }
+    } catch {
+      // Still clear local state even if API fails (e.g. token expired)
+    } finally {
+      tokenStore.clear();
+      router.push("/welcome");
+    }
   }
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
