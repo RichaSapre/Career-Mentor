@@ -14,22 +14,39 @@ import { tokenStore } from "@/lib/auth/tokenStore";
 import { CITIZENSHIP_STATUSES, REMOTE_PREFERENCES } from "@/lib/data/constants";
 import type { SignupPayload, Tokens } from "@/lib/api/types";
 
-// Map draft values to API values - handles labels, uppercase, and cached data
+// Map draft values to backend-expected API values (handles legacy localStorage values)
+const CITIZENSHIP_MAP: Record<string, string> = {
+  us_citizen: "US Citizen",
+  permanent_resident: "Green Card",
+  h1b: "Work Visa",
+  f1_opt: "Student Visa",
+  need_sponsorship: "No Authorization",
+  other: "Other",
+  "US Citizen": "US Citizen",
+  "Green Card": "Green Card",
+  "Work Visa": "Work Visa",
+  "Student Visa": "Student Visa",
+  "No Authorization": "No Authorization",
+  Other: "Other",
+};
+const REMOTE_MAP: Record<string, string> = {
+  remote: "Remote Only",
+  onsite: "On-site",
+  hybrid: "Hybrid",
+  flexible: "Flexible",
+  "Remote Only": "Remote Only",
+  "On-site": "On-site",
+  Hybrid: "Hybrid",
+  Flexible: "Flexible",
+  Remote: "Remote Only",
+};
 function toApiCitizenship(val: string): string {
-  const found = CITIZENSHIP_STATUSES.find(
-    (s) =>
-      s.value === val ||
-      s.label === val ||
-      s.value === val?.toLowerCase() ||
-      s.value === val?.toLowerCase()?.replace(/-/g, "_")
-  );
-  return found?.value ?? val;
+  const key = val?.trim();
+  return CITIZENSHIP_MAP[key] ?? CITIZENSHIP_STATUSES.find((s) => s.value === key || s.label === key)?.value ?? val;
 }
 function toApiRemote(val: string): string {
-  const found = REMOTE_PREFERENCES.find(
-    (r) => r.value === val || r.label === val || r.value === val?.toLowerCase()
-  );
-  return found?.value ?? val?.toLowerCase() ?? val;
+  const key = val?.trim()?.toLowerCase();
+  return REMOTE_MAP[key] ?? REMOTE_MAP[val?.trim() ?? ""] ?? REMOTE_PREFERENCES.find((r) => r.value === val || r.label === val)?.value ?? val;
 }
 
 type FormValues = {
@@ -122,17 +139,20 @@ export default function SalaryLinksPage() {
     setError(null);
 
     try {
-      const res = await apiFetch<{ accessToken?: string; refreshToken?: string; tokens?: Tokens }>(
-        API.signupComplete,
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-          auth: false,
-        }
-      );
+      const res = await apiFetch<{
+        accessToken?: string;
+        refreshToken?: string;
+        tokens?: Tokens;
+        data?: { accessToken?: string; refreshToken?: string };
+      }>(API.signupComplete, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        auth: false,
+      });
 
-      const accessToken = res?.accessToken ?? res?.tokens?.accessToken;
-      const refreshToken = res?.refreshToken ?? res?.tokens?.refreshToken;
+      const d = res?.data ?? res;
+      const accessToken = res?.accessToken ?? d?.accessToken ?? res?.tokens?.accessToken;
+      const refreshToken = res?.refreshToken ?? d?.refreshToken ?? res?.tokens?.refreshToken;
       if (accessToken && refreshToken) {
         tokenStore.set({ accessToken, refreshToken });
       }

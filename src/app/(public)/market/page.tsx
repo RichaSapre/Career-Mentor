@@ -1,5 +1,24 @@
+"use client";
+
 import Link from "next/link";
+import {
+  LineChart as ReLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 import { GlassCard } from "@/components/glass/GlassCard";
+
+const DEMO_TREND = [
+  { date: "2025-10", count: 820 },
+  { date: "2025-11", count: 910 },
+  { date: "2025-12", count: 970 },
+  { date: "2026-01", count: 1120 },
+  { date: "2026-02", count: 1240 },
+];
 
 export default function PublicMarketPage() {
   return (
@@ -27,10 +46,44 @@ export default function PublicMarketPage() {
           </GlassCard>
         </div>
 
-        <GlassCard className="min-h-[320px]">
+        <GlassCard className="min-h-[320px] p-6">
           <div className="text-lg font-semibold text-heading">Trend for Data Analyst</div>
-          <div className="mt-2 text-sm text-muted">
-            (Demo chart can be added here. This page is public-only.)
+          <div className="mt-2 text-sm text-muted">Sample hiring volume over time (sign in for live data)</div>
+
+          <div className="mt-6" style={{ height: 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ReLineChart data={DEMO_TREND} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="6 6" stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--surface-inset)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "12px",
+                    fontSize: "12px",
+                    color: "var(--heading)",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="var(--accent-primary)"
+                  strokeWidth={4}
+                  dot={{ r: 4, fill: "var(--accent-primary)", strokeWidth: 2, stroke: "var(--background)" }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                />
+              </ReLineChart>
+            </ResponsiveContainer>
           </div>
 
           <div className="mt-6 text-center">

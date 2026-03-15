@@ -1,22 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { signupDraft } from "@/lib/auth/signupDraft";
-import { 
-  Search, 
-  MapPin, 
-  Building2, 
-  BrainCircuit, 
+import { useMe } from "@/features/auth/hooks";
+import { apiFetch } from "@/lib/api/client";
+import { API } from "@/lib/api/endpoints";
+import {
+  Search,
+  MapPin,
+  Building2,
+  BrainCircuit,
   GitCompare,
   TrendingUp,
   AlertCircle,
   CheckCircle2,
   Briefcase,
-  User
+  User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type Job = {
   id: string;
@@ -26,44 +28,49 @@ type Job = {
   requiredSkills: string[];
 };
 
-const MOCK_JOBS: Job[] = [
-  {
-    id: "1",
-    title: "Data Analyst",
-    company: "TechCorp",
-    location: "San Francisco",
-    requiredSkills: ["SQL", "Python", "Tableau", "Statistics"],
-  },
-  {
-    id: "2",
-    title: "Software Engineer",
-    company: "InnovateX",
-    location: "Seattle",
-    requiredSkills: ["Java", "DSA", "System Design", "Spring Boot"],
-  },
-  {
-    id: "3",
-    title: "Product Manager",
-    company: "Nexus Dynamics",
-    location: "Remote",
-    requiredSkills: ["Agile", "Jira", "Strategy", "SQL"],
-  }
-];
-
 export default function JobsPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const draft = signupDraft.get();
+  const { data: user } = useMe();
   const userSkills =
-    draft.skills?.map((s: any) =>
-      typeof s === "string" ? s : s.skill_name
-    ) || [];
+    user?.skills?.map((s) => s.skillName) ??
+    signupDraft.get().skills?.map((s: any) => (typeof s === "string" ? s : s.skill_name ?? s.skillName)) ??
+    [];
 
-  const filteredJobs = MOCK_JOBS.filter((job) =>
-    job.title.toLowerCase().includes(query.toLowerCase()) || 
-    job.company.toLowerCase().includes(query.toLowerCase())
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = (await apiFetch(API.recommendedRoles, { method: "GET", auth: true })) as any;
+        if (cancelled) return;
+        const rawList = Array.isArray(r) ? r : r?.data ?? [];
+        const mapped: Job[] = ((rawList ?? []) as any[]).map((x: any, idx: number): Job => ({
+          id: x.roleId ?? x.role_id ?? `role-${idx}`,
+          title: x.roleTitle ?? x.role_title ?? "",
+          company: "Market Opportunity",
+          location: (x.topLocations ?? x.top_locations ?? ["Remote"])[0] ?? "Remote",
+          requiredSkills: x.topRequiredSkills ?? x.top_required_skills ?? x.missingSkills ?? x.missing_skills ?? [],
+        })).filter((j) => !!j.title);
+        if (cancelled) return;
+        setJobs(mapped);
+      } catch {
+        setJobs([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const filteredJobs = jobs.filter(
+    (job) =>
+      job.title.toLowerCase().includes(query.toLowerCase()) ||
+      job.company.toLowerCase().includes(query.toLowerCase()) ||
+      job.location.toLowerCase().includes(query.toLowerCase())
   );
 
   function calculateFit(job: Job) {
@@ -116,10 +123,21 @@ export default function JobsPage() {
 
       {/* Job Results */}
       <div className="grid grid-cols-1 gap-6">
-        {filteredJobs.length === 0 && (
+        {loading && (
+          <div className="text-center py-20 text-muted border border-border rounded-[2.5rem] bg-surface">
+            <div className="animate-pulse text-lg font-black italic">Loading opportunities...</div>
+          </div>
+        )}
+        {!loading && filteredJobs.length === 0 && (
           <div className="text-center py-20 text-muted border border-border rounded-[2.5rem] bg-surface">
             <Search className="w-12 h-12 mx-auto mb-4 opacity-10" />
-            <p className="text-lg italic font-black">No jobs found matching your search.</p>
+            <p className="text-lg italic font-black">No opportunities found. Complete your profile for personalized role recommendations.</p>
+            <button
+              onClick={() => router.push("/profile")}
+              className="mt-4 px-6 py-3 rounded-xl bg-btn-primary-bg text-btn-primary-text font-bold hover:bg-btn-primary-hover transition-all"
+            >
+              Go to Profile
+            </button>
           </div>
         )}
 

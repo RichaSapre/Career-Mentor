@@ -1,5 +1,16 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  redirect("/welcome");
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/welcome");
+  }, [router]);
+  return (
+    <main className="bg-gradient-soft min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-muted">Loading...</div>
+    </main>
+  );
 }

@@ -7,9 +7,10 @@ export const API = {
   getUserDetails: "/auth/user",
   logout: "/auth/logout",
 
-  updateProfile: "/auth/signup", // complete profile can be reused
+  updateProfile: "/auth/signup", // complete signup
+  patchProfile: "/auth/user", // partial profile update
   
   marketAnalyzer: "/market/analyze",
   recommendedRoles: "/recommendations",
-  skillOntology: "/skills"
+  extractResume: "/profile/extract-resume",
 };

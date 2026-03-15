@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { signupDraft } from "@/lib/auth/signupDraft";
 import ProfilePhotoModal from "@/components/profile/ProfilePhotoModal";
@@ -8,6 +9,7 @@ import { useMe } from "@/features/auth/hooks";
 import type { UserProfile } from "@/lib/api/types";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { data: user, isLoading } = useMe();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -62,6 +64,12 @@ export default function ProfilePage() {
           <p className="text-muted mt-2 font-black italic">
             {displayEmail}
           </p>
+          <button
+            onClick={() => router.push("/profile/edit")}
+            className="mt-4 px-5 py-2.5 rounded-xl bg-btn-secondary-bg border border-btn-secondary-border text-btn-secondary-text font-bold hover:bg-btn-secondary-hover transition-all text-sm"
+          >
+            Edit Profile
+          </button>
         </div>
       </div>
 

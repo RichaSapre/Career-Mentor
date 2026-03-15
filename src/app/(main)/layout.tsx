@@ -1,8 +1,32 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SideNav } from "@/components/nav/SideNav";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-
+import { tokenStore } from "@/lib/auth/tokenStore";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!tokenStore.getAccess()) {
+      router.replace("/welcome");
+      return;
+    }
+    setReady(true);
+  }, [router]);
+
+  if (!ready) {
+    return (
+      <div className="bg-gradient-soft min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-soft min-h-screen flex flex-col md:flex-row relative">
       <SideNav />
