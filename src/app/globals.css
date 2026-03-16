@@ -20,11 +20,11 @@
     /* ── Backgrounds ── */
     --background: #FCFAFF;
     /* page canvas - subtle lavender tint */
-    --surface: rgba(255, 255, 255, 0.85);
-    /* cards / panels */
-    --surface-hover: rgba(255, 255, 255, 1);
-    --surface-inset: #F5F3FF;
-    /* violet-50 */
+    --surface: rgba(255, 255, 255, 0.45);
+    /* Liquid Glass Base */
+    --surface-hover: rgba(255, 255, 255, 0.65);
+    --surface-inset: rgba(245, 243, 255, 0.50);
+    /* violet-50 with transparency */
 
     /* ── Typography ── */
     --heading: #1E1B4B;
@@ -106,9 +106,10 @@
     /* ── Backgrounds ── */
     --background: #020617;
     /* slate-950 (Deepest Navy) */
-    --surface: rgba(15, 23, 42, 0.60);
-    --surface-hover: rgba(30, 41, 59, 0.50);
-    --surface-inset: rgba(15, 23, 42, 0.80);
+    --surface: rgba(15, 23, 42, 0.40);
+    /* Liquid Glass Base */
+    --surface-hover: rgba(30, 41, 59, 0.30);
+    --surface-inset: rgba(15, 23, 42, 0.60);
 
     /* ── Typography ── */
     --heading: #F8FAFC;
@@ -203,22 +204,39 @@ body {
     var(--background);
 }
 
-/* ── Gemini-like glow border effect ── */
+/* ── Gemini-like glow border effect (Liquid Glass Enhancement) ── */
 .gemini-glow {
   position: relative;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 
 .gemini-glow::before {
   content: "";
   position: absolute;
   inset: -1px;
-  background: linear-gradient(to bottom right, rgba(124, 58, 237, 0.15), rgba(219, 39, 119, 0.15));
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.05) 40%,
+      rgba(255, 255, 255, 0) 50%,
+      rgba(255, 255, 255, 0.05) 60%,
+      rgba(255, 255, 255, 0.2) 100%);
   border-radius: inherit;
   z-index: -1;
   opacity: 1;
   transition: opacity 0.3s ease;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  padding: 1px;
 }
 
 .dark .gemini-glow::before {
-  background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 40%,
+      rgba(255, 255, 255, 0) 50%,
+      rgba(255, 255, 255, 0.05) 60%,
+      rgba(255, 255, 255, 0.1) 100%);
 }
