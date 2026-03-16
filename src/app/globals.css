@@ -18,140 +18,173 @@
 @layer base {
   :root {
     /* ── Backgrounds ── */
-    --background: #F8FAFC;          /* page canvas */
-    --surface: rgba(255,255,255,0.80);  /* cards / panels */
-    --surface-hover: rgba(255,255,255,1);
-    --surface-inset: #F1F5F9;       /* inset areas inside cards */
+    --background: #FCFAFF;
+    /* page canvas - subtle lavender tint */
+    --surface: rgba(255, 255, 255, 0.85);
+    /* cards / panels */
+    --surface-hover: rgba(255, 255, 255, 1);
+    --surface-inset: #F5F3FF;
+    /* violet-50 */
 
     /* ── Typography ── */
-    --heading: #0F172A;             /* primary headings */
-    --body: #334155;                /* body / paragraph text */
-    --muted: #64748B;              /* secondary / helper text */
-    --faint: #94A3B8;              /* placeholders, timestamps */
+    --heading: #1E1B4B;
+    /* indigo-950 */
+    --body: #312E81;
+    /* indigo-900 */
+    --muted: #4338CA;
+    /* indigo-700 */
+    --faint: #6366F1;
+    /* indigo-500 */
 
     /* ── Borders & Dividers ── */
-    --border: rgba(15,23,42,0.08);
-    --border-hover: rgba(6,182,212,0.30);
-    --divider: #E2E8F0;
+    --border: rgba(30, 27, 75, 0.08);
+    --border-hover: rgba(124, 58, 237, 0.30);
+    --divider: #E0E7FF;
+    /* indigo-100 */
 
     /* ── Brand Accent ── */
-    --accent-primary: #0284C7;      /* sky-600 */
-    --accent-secondary: #059669;    /* emerald-600 */
+    --accent-primary: #7C3AED;
+    /* violet-600 */
+    --accent-secondary: #DB2777;
+    /* pink-600 */
 
     /* ── Gradient for hero headings ── */
-    --gradient-from: #312E81;       /* indigo-900 */
-    --gradient-via: #0E7490;        /* cyan-800 */
-    --gradient-to: #047857;         /* emerald-700 */
+    --gradient-from: #1E1B4B;
+    /* indigo-950 */
+    --gradient-via: #4C1D95;
+    /* violet-950 */
+    --gradient-to: #831843;
+    /* rose-950 */
 
     /* ── Form Controls ── */
-    --input-bg: rgba(255,255,255,0.60);
-    --input-border: rgba(15,23,42,0.10);
-    --input-text: #0F172A;
-    --input-placeholder: #94A3B8;
-    --input-focus-ring: rgba(2,132,199,0.15);
+    --input-bg: rgba(255, 255, 255, 0.70);
+    --input-border: rgba(30, 27, 75, 0.10);
+    --input-text: #1E1B4B;
+    --input-placeholder: #818CF8;
+    --input-focus-ring: rgba(124, 58, 237, 0.15);
 
     /* ── Shadows ── */
-    --shadow-card: 0 8px 30px rgb(0 0 0 / 0.04);
-    --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.08);
-    --shadow-glow-primary: 0 0 20px rgba(7, 89, 133, 0.6);
-    --shadow-glow-secondary: 0 0 20px rgba(4, 120, 87, 0.6);
+    --shadow-card: 0 8px 30px rgb(30 27 75 / 0.04);
+    --shadow-elevated: 0 12px 40px rgb(30 27 75 / 0.08);
+    --shadow-glow-primary: 0 0 20px rgba(124, 58, 237, 0.4);
+    --shadow-glow-secondary: 0 0 20px rgba(219, 39, 119, 0.4);
 
     /* ── Misc ── */
-    --glow-opacity: 0.08;
-    --overlay: rgba(0,0,0,0.50);
-    --badge-success-bg: rgba(5,150,105,0.10);
-    --badge-success-border: rgba(5,150,105,0.20);
-    --badge-success-text: #047857;
-    --badge-info-bg: rgba(2,132,199,0.10);
-    --badge-info-border: rgba(2,132,199,0.20);
-    --badge-info-text: #0369A1;
-    --tag-bg: #F1F5F9;
-    --tag-border: rgba(15,23,42,0.08);
-    --tag-text: #475569;
-    --tag-hover-bg: rgba(2,132,199,0.06);
-    --tag-hover-border: rgba(2,132,199,0.20);
-    --tag-hover-text: #0369A1;
+    --glow-opacity: 0.10;
+    --overlay: rgba(15, 23, 42, 0.50);
+    --badge-success-bg: rgba(219, 39, 119, 0.10);
+    --badge-success-border: rgba(219, 39, 119, 0.20);
+    --badge-success-text: #BE185D;
+    --badge-info-bg: rgba(124, 58, 237, 0.10);
+    --badge-info-border: rgba(124, 58, 237, 0.20);
+    --badge-info-text: #6D28D9;
+    --tag-bg: #EEF2FF;
+    --tag-border: rgba(30, 27, 75, 0.08);
+    --tag-text: #4338CA;
+    --tag-hover-bg: rgba(124, 58, 237, 0.06);
+    --tag-hover-border: rgba(124, 58, 237, 0.20);
+    --tag-hover-text: #6D28D9;
 
     /* ── Buttons ── */
-    --btn-primary-bg: #0284C7;
-    --btn-primary-hover: #0EA5E9;
+    --btn-primary-bg: #7C3AED;
+    --btn-primary-hover: #8B5CF6;
     --btn-primary-text: #FFFFFF;
     --btn-ghost-bg: transparent;
-    --btn-ghost-hover: rgba(15,23,42,0.05);
-    --btn-ghost-text: #334155;
-    --btn-secondary-bg: #F1F5F9;
-    --btn-secondary-hover: #E2E8F0;
-    --btn-secondary-text: #334155;
-    --btn-secondary-border: rgba(15,23,42,0.08);
+    --btn-ghost-hover: rgba(124, 58, 237, 0.05);
+    --btn-ghost-text: #4338CA;
+    --btn-secondary-bg: #EEF2FF;
+    --btn-secondary-hover: #E0E7FF;
+    --btn-secondary-text: #4338CA;
+    --btn-secondary-border: rgba(30, 27, 75, 0.08);
+
+    /* ── Glow Colors (for gradients) ── */
+    --glow-1: rgba(124, 58, 237, var(--glow-opacity));
+    --glow-2: rgba(219, 39, 119, var(--glow-opacity));
   }
 
   .dark {
     /* ── Backgrounds ── */
-    --background: #05070A;
-    --surface: rgba(15,23,42,0.40);
-    --surface-hover: rgba(15,23,42,0.60);
-    --surface-inset: rgba(15,23,42,0.50);
+    --background: #020617;
+    /* slate-950 (Deepest Navy) */
+    --surface: rgba(15, 23, 42, 0.60);
+    --surface-hover: rgba(30, 41, 59, 0.50);
+    --surface-inset: rgba(15, 23, 42, 0.80);
 
     /* ── Typography ── */
     --heading: #F8FAFC;
-    --body: #E2E8F0;
+    --body: #CBD5E1;
+    /* slate-300 */
     --muted: #94A3B8;
-    --faint: #64748B;
+    /* slate-400 */
+    --faint: #475569;
+    /* slate-600 */
 
     /* ── Borders & Dividers ── */
-    --border: rgba(30,41,59,0.50);
-    --border-hover: rgba(6,182,212,0.30);
-    --divider: rgba(30,41,59,0.50);
+    --border: rgba(51, 65, 85, 0.50);
+    /* slate-700 */
+    --border-hover: rgba(34, 211, 238, 0.30);
+    /* cyan-400 */
+    --divider: rgba(51, 65, 85, 0.30);
 
     /* ── Brand Accent ── */
-    --accent-primary: #06B6D4;
-    --accent-secondary: #10B981;
+    --accent-primary: #22D3EE;
+    /* cyan-400 */
+    --accent-secondary: #818CF8;
+    /* indigo-400 */
 
     /* ── Gradient for hero headings ── */
-    --gradient-from: #F4F4F5;
-    --gradient-via: #A1A1AA;
-    --gradient-to: #71717A;
+    --gradient-from: #FFFFFF;
+    --gradient-via: #A5F3FC;
+    /* cyan-200 */
+    --gradient-to: #C7D2FE;
+    /* indigo-200 */
 
     /* ── Form Controls ── */
-    --input-bg: rgba(255,255,255,0.06);
-    --input-border: rgba(255,255,255,0.10);
-    --input-text: #F4F4F5;
-    --input-placeholder: #52525B;
-    --input-focus-ring: rgba(6,182,212,0.15);
+    --input-bg: rgba(15, 23, 42, 0.40);
+    --input-border: rgba(51, 65, 85, 0.50);
+    --input-text: #F8FAFC;
+    --input-placeholder: #475569;
+    --input-focus-ring: rgba(34, 211, 238, 0.20);
 
     /* ── Shadows ── */
-    --shadow-card: 0 8px 30px rgb(0 0 0 / 0.30);
-    --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.50);
-    --shadow-glow-primary: 0 0 20px rgba(6, 182, 212, 0.5);
-    --shadow-glow-secondary: 0 0 20px rgba(16, 185, 129, 0.5);
+    --shadow-card: 0 8px 30px rgb(0 0 0 / 0.40);
+    --shadow-elevated: 0 12px 40px rgb(0 0 0 / 0.60);
+    --shadow-glow-primary: 0 0 25px rgba(34, 211, 238, 0.3);
+    --shadow-glow-secondary: 0 0 25px rgba(129, 140, 248, 0.3);
 
     /* ── Misc ── */
-    --glow-opacity: 0.05;
-    --overlay: rgba(0,0,0,0.75);
-    --badge-success-bg: rgba(16,185,129,0.10);
-    --badge-success-border: rgba(16,185,129,0.20);
-    --badge-success-text: #34D399;
-    --badge-info-bg: rgba(6,182,212,0.10);
-    --badge-info-border: rgba(6,182,212,0.20);
-    --badge-info-text: #22D3EE;
-    --tag-bg: rgba(255,255,255,0.05);
-    --tag-border: rgba(255,255,255,0.05);
-    --tag-text: #A1A1AA;
-    --tag-hover-bg: rgba(6,182,212,0.08);
-    --tag-hover-border: rgba(6,182,212,0.20);
-    --tag-hover-text: #67E8F9;
+    --glow-opacity: 0.08;
+    --overlay: rgba(2, 6, 23, 0.90);
+    --badge-success-bg: rgba(34, 211, 238, 0.10);
+    --badge-success-border: rgba(34, 211, 238, 0.20);
+    --badge-success-text: #22D3EE;
+    --badge-info-bg: rgba(129, 140, 248, 0.10);
+    --badge-info-border: rgba(129, 140, 248, 0.20);
+    --badge-info-text: #818CF8;
+    --tag-bg: rgba(255, 255, 255, 0.03);
+    --tag-border: rgba(51, 65, 85, 0.40);
+    --tag-text: #94A3B8;
+    --tag-hover-bg: rgba(34, 211, 238, 0.08);
+    --tag-hover-border: rgba(34, 211, 238, 0.30);
+    --tag-hover-text: #22D3EE;
 
     /* ── Buttons ── */
-    --btn-primary-bg: #0891B2;
-    --btn-primary-hover: #06B6D4;
-    --btn-primary-text: #FFFFFF;
+    --btn-primary-bg: #0EA5E9;
+    /* sky-500 */
+    --btn-primary-hover: #38BDF8;
+    /* sky-400 */
+    --btn-primary-text: #082F49;
     --btn-ghost-bg: transparent;
-    --btn-ghost-hover: rgba(255,255,255,0.06);
-    --btn-ghost-text: #E2E8F0;
-    --btn-secondary-bg: rgba(255,255,255,0.05);
-    --btn-secondary-hover: rgba(255,255,255,0.10);
-    --btn-secondary-text: #D4D4D8;
-    --btn-secondary-border: rgba(255,255,255,0.05);
+    --btn-ghost-hover: rgba(255, 255, 255, 0.06);
+    --btn-ghost-text: #CBD5E1;
+    --btn-secondary-bg: rgba(30, 41, 59, 0.50);
+    --btn-secondary-hover: rgba(51, 65, 85, 0.50);
+    --btn-secondary-text: #F8FAFC;
+    --btn-secondary-border: rgba(51, 65, 85, 0.50);
+
+    /* ── Glow Colors (for gradients) ── */
+    --glow-1: rgba(34, 211, 238, var(--glow-opacity));
+    --glow-2: rgba(129, 140, 248, var(--glow-opacity));
   }
 }
 
@@ -165,8 +198,8 @@ body {
 /* ── Reusable background gradient (page-level) ── */
 .bg-gradient-soft {
   background:
-    radial-gradient(1200px 800px at 15% 10%, rgba(8,145,178, var(--glow-opacity)), transparent 50%),
-    radial-gradient(1000px 700px at 85% 90%, rgba(5,150,105, var(--glow-opacity)), transparent 60%),
+    radial-gradient(1200px 800px at 15% 10%, var(--glow-1), transparent 50%),
+    radial-gradient(1000px 700px at 85% 90%, var(--glow-2), transparent 60%),
     var(--background);
 }
 
@@ -174,16 +207,18 @@ body {
 .gemini-glow {
   position: relative;
 }
+
 .gemini-glow::before {
   content: "";
   position: absolute;
   inset: -1px;
-  background: linear-gradient(to bottom right, rgba(6,182,212,0.15), rgba(16,185,129,0.15));
+  background: linear-gradient(to bottom right, rgba(124, 58, 237, 0.15), rgba(219, 39, 119, 0.15));
   border-radius: inherit;
   z-index: -1;
   opacity: 1;
   transition: opacity 0.3s ease;
 }
+
 .dark .gemini-glow::before {
-  background: linear-gradient(to bottom right, rgba(6,182,212,0.1), rgba(16,185,129,0.1));
+  background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
 }

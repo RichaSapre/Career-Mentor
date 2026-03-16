@@ -18,8 +18,8 @@ export default {
        */
       colors: {
         brand: {
-          DEFAULT: "#0A6B6A",
-          dark: "#074E4D"
+          DEFAULT: "var(--accent-primary)",
+          dark: "var(--accent-primary)"
         },
 
         /* Semantic surface / background */
