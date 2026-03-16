@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { experienceSchema } from "@/features/profile/schema";
 import { signupDraft } from "@/lib/auth/signupDraft";
+import { apiFetch } from "@/lib/api/client";
+import { API } from "@/lib/api/endpoints";
 import type { Experience } from "@/lib/api/types";
 
 type FormValues = z.infer<typeof experienceSchema>;
@@ -28,6 +30,10 @@ export default function ExperiencePage() {
   });
 
   const hasExperience = form.watch("hasExperience");
+  const [resumeText, setResumeText] = useState("");
+  const [resumeExpanded, setResumeExpanded] = useState(false);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -90,9 +96,96 @@ export default function ExperiencePage() {
     router.push("/skills");
   }
 
+  async function handleExtractResume() {
+    if (!resumeText.trim()) return;
+    setResumeLoading(true);
+    setResumeError(null);
+    try {
+      const res = (await apiFetch(API.extractResume, {
+        method: "POST",
+        body: JSON.stringify({ resumeText: resumeText.trim() }),
+        auth: false,
+      })) as any;
+      const data = res?.data ?? res;
+      if (data?.experiences?.length) {
+        form.setValue("hasExperience", true);
+        replace(
+          data.experiences.slice(0, 5).map((e: any) => {
+            const startDate = e.startDate ?? (e.duration ? "" : "");
+            return {
+              title: e.title ?? "",
+              company: e.company ?? "",
+              description: e.description ?? "",
+              month: startDate?.slice?.(5, 7)?.replace?.(/^0/, "") ?? "",
+              year: startDate?.slice?.(0, 4) ?? "",
+              techStack: Array.isArray(e.techStack) ? e.techStack.join(", ") : (e.techStack ?? ""),
+              duration: e.duration ?? "",
+              isCurrent: false,
+            };
+          })
+        );
+      }
+      if (data?.skills?.length) {
+        signupDraft.set({
+          ...signupDraft.get(),
+          skills: data.skills.map((s: any) => ({
+            skillName: s.skillName ?? s,
+            proficiencyLevel: s.proficiencyLevel ?? 3,
+          })),
+        });
+      }
+      if (data?.education) {
+        const edu = data.education;
+        signupDraft.set({
+          ...signupDraft.get(),
+          degreeLevel: edu.degreeLevel ?? signupDraft.get().degreeLevel,
+          major: edu.major ?? signupDraft.get().major,
+          university: edu.university ?? signupDraft.get().university,
+          graduationDate: edu.graduationDate ?? signupDraft.get().graduationDate,
+        });
+      }
+      setResumeExpanded(false);
+    } catch (e: any) {
+      setResumeError(e?.message ?? "Extraction failed. Try again.");
+    } finally {
+      setResumeLoading(false);
+    }
+  }
+
   return (
     <GlassCard>
       <h2 className="text-center text-xl font-semibold text-heading">Experience</h2>
+
+      {/* Resume extraction (proposal: semi-automated extraction from résumés) */}
+      <div className="mt-4 mb-4 rounded-xl border border-border bg-surface-inset/50 p-3">
+        <button
+          type="button"
+          onClick={() => setResumeExpanded(!resumeExpanded)}
+          className="text-sm font-medium text-accent-primary hover:underline"
+        >
+          {resumeExpanded ? "−" : "+"} Import from resume (paste text)
+        </button>
+        {resumeExpanded && (
+          <div className="mt-3 space-y-2">
+            <textarea
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              placeholder="Paste your resume text here..."
+              className="w-full rounded-lg border border-input-border bg-input-bg px-3 py-2 text-sm placeholder:text-input-placeholder min-h-[120px]"
+              rows={4}
+            />
+            {resumeError && <p className="text-xs text-red-500">{resumeError}</p>}
+            <button
+              type="button"
+              onClick={handleExtractResume}
+              disabled={resumeLoading || !resumeText.trim()}
+              className="rounded-lg bg-accent-primary/20 text-accent-primary px-4 py-2 text-sm font-medium hover:bg-accent-primary/30 disabled:opacity-50"
+            >
+              {resumeLoading ? "Extracting…" : "Extract & auto-fill"}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Toggle */}
       <div className="mt-5 space-y-3">

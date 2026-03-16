@@ -7,20 +7,21 @@ export const DEGREE_LEVELS = [
   "Other",
 ] as const;
 
-// API values must match backend validation - update if your backend expects different enums
+// Values must match backend validation exactly (authValidation.ts)
 export const CITIZENSHIP_STATUSES = [
-  { value: "us_citizen", label: "US Citizen" },
-  { value: "permanent_resident", label: "Permanent Resident" },
-  { value: "h1b", label: "H-1B" },
-  { value: "f1_opt", label: "F-1/OPT" },
-  { value: "other", label: "Other Work Authorization" },
-  { value: "need_sponsorship", label: "Need Sponsorship" },
+  { value: "US Citizen", label: "US Citizen" },
+  { value: "Green Card", label: "Permanent Resident" },
+  { value: "Work Visa", label: "H-1B / Work Visa" },
+  { value: "Student Visa", label: "F-1/OPT" },
+  { value: "No Authorization", label: "Need Sponsorship" },
+  { value: "Other", label: "Other Work Authorization" },
 ] as const;
 
 export const REMOTE_PREFERENCES = [
-  { value: "remote", label: "Remote" },
-  { value: "onsite", label: "On-site" },
-  { value: "hybrid", label: "Hybrid" },
+  { value: "Remote Only", label: "Remote" },
+  { value: "On-site", label: "On-site" },
+  { value: "Hybrid", label: "Hybrid" },
+  { value: "Flexible", label: "Flexible" },
 ] as const;
 
 export const INDUSTRIES = [

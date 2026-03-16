@@ -17,23 +17,58 @@ import {
 import { GlassCard } from "@/components/glass/GlassCard";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/features/auth/hooks";
+import { apiFetch } from "@/lib/api/client";
+import { API } from "@/lib/api/endpoints";
+
+const FALLBACK_RECOMMENDATIONS = [
+  { title: "Data Analyst", fit: 85, skills: ["SQL", "Python", "Tableau"], trend: "+12%" },
+  { title: "Software Engineer", fit: 74, skills: ["React", "Typescript", "Node.js"], trend: "+5%" },
+];
+
+function trendFromDirection(dir?: string): string {
+  if (dir === "up") return "+12%";
+  if (dir === "down") return "-3%";
+  return "+5%";
+}
 
 export default function DashboardPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [recommendations, setRecommendations] = useState(FALLBACK_RECOMMENDATIONS);
+  const [gapCount, setGapCount] = useState(2);
   const { data: user } = useMe();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = (await apiFetch(API.recommendedRoles, { method: "GET", auth: true })) as any;
+        if (cancelled) return;
+        const rawList = Array.isArray(r) ? r : (r?.data ?? []);
+        if (!rawList?.length) return;
+        const mapped = rawList.slice(0, 4).map((x: any) => ({
+          title: x.roleTitle ?? x.role_title ?? "",
+          fit: x.fitScore ?? x.fit_score ?? 0,
+          skills: (x.topRequiredSkills ?? x.top_required_skills ?? x.missingSkills ?? x.missing_skills ?? []).slice(0, 4),
+          trend: trendFromDirection(x.trendDirection ?? x.trend_direction),
+        })).filter((x: any) => x.title);
+        if (cancelled || !mapped.length) return;
+        setRecommendations(mapped);
+        const totalMissing = rawList.reduce((acc: number, x: any) => acc + (x.missingSkills ?? x.missing_skills ?? []).length, 0);
+        setGapCount(Math.min(99, totalMissing || 2));
+      } catch {
+        // keep fallback
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const userName = user?.fullName ?? (user as any)?.full_name ?? "User";
   const targetRole = user?.targetRoles?.[0] ?? (user as any)?.target_roles?.[0] ?? "Data Analyst";
-
-  const recommendations = [
-    { title: "Data Analyst", fit: 85, skills: ["SQL", "Python", "Tableau"], trend: "+12%" },
-    { title: "Software Engineer", fit: 74, skills: ["React", "Typescript", "Node.js"], trend: "+5%" },
-  ];
 
   const quickActions = [
     {
@@ -52,7 +87,7 @@ export default function DashboardPage() {
     },
     {
       title: "Run Analysis",
-      desc: "Simulate interview",
+      desc: "Market analysis",
       icon: BrainCircuit,
       link: "/market-analyzer",
       color: "bg-badge-info-bg text-accent-primary"
@@ -117,33 +152,45 @@ export default function DashboardPage() {
           <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-accent-primary/5 blur-3xl rounded-full opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
         </GlassCard>
 
-        {/* Small metric 1 */}
-        <GlassCard className="col-span-1 md:col-span-4 lg:col-span-3 row-span-1 flex flex-col justify-between hover:border-border-hover transition-all duration-300 p-6 shadow-card">
-          <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-badge-info-bg text-badge-info-text border border-badge-info-border shadow-inner">
-              <Briefcase className="w-5 h-5" />
+        {/* Small metric 1 - clickable */}
+        <button
+          type="button"
+          onClick={() => router.push(`/market-analyzer?role=${encodeURIComponent(targetRole)}`)}
+          className="col-span-1 md:col-span-4 lg:col-span-3 row-span-1 text-left"
+        >
+          <GlassCard className="h-full flex flex-col justify-between hover:border-border-hover transition-all duration-300 p-6 shadow-card">
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-badge-info-bg text-badge-info-text border border-badge-info-border shadow-inner">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-faint" />
             </div>
-            <ArrowUpRight className="w-4 h-4 text-faint" />
-          </div>
-          <div>
-            <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Target Role</div>
-            <div className="text-xl font-bold text-heading tracking-tight">{mounted ? targetRole : "..."}</div>
-          </div>
-        </GlassCard>
+            <div>
+              <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Target Role</div>
+              <div className="text-xl font-bold text-heading tracking-tight">{mounted ? targetRole : "..."}</div>
+            </div>
+          </GlassCard>
+        </button>
 
-        {/* Small metric 2 */}
-        <GlassCard className="col-span-1 md:col-span-4 lg:col-span-3 row-span-1 flex flex-col justify-between hover:border-border-hover transition-all duration-300 p-6 shadow-card">
-          <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-badge-success-bg text-badge-success-text border border-badge-success-border shadow-inner">
-              <AlertCircle className="w-5 h-5" />
+        {/* Small metric 2 - clickable */}
+        <button
+          type="button"
+          onClick={() => router.push("/jobs")}
+          className="col-span-1 md:col-span-4 lg:col-span-3 row-span-1 text-left"
+        >
+          <GlassCard className="h-full flex flex-col justify-between hover:border-border-hover transition-all duration-300 p-6 shadow-card">
+            <div className="flex items-center justify-between">
+              <div className="p-2.5 rounded-xl bg-badge-success-bg text-badge-success-text border border-badge-success-border shadow-inner">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-faint" />
             </div>
-            <ArrowUpRight className="w-4 h-4 text-faint" />
-          </div>
-          <div>
-            <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Gap Analysis</div>
-            <div className="text-xl font-bold text-heading tracking-tight">2 Missing Skills</div>
-          </div>
-        </GlassCard>
+            <div>
+              <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Gap Analysis</div>
+              <div className="text-xl font-bold text-heading tracking-tight">{gapCount} Missing Skills</div>
+            </div>
+          </GlassCard>
+        </button>
 
         {/* Quick Actions Bento Item */}
         <GlassCard className="col-span-1 md:col-span-8 lg:col-span-6 row-span-1 flex flex-col justify-center p-6">
@@ -181,7 +228,12 @@ export default function DashboardPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 place-items-stretch">
             {recommendations.map((role, idx) => (
-              <div key={idx} className="group flex flex-col justify-between bg-surface-inset hover:bg-surface-hover border border-border hover:border-border-hover rounded-[1.5rem] p-6 transition-all duration-300 cursor-pointer h-full shadow-sm hover:shadow-elevated">
+              <button
+                key={idx}
+                type="button"
+                onClick={() => router.push(`/market-analyzer?role=${encodeURIComponent(role.title)}`)}
+                className="group flex flex-col justify-between bg-surface-inset hover:bg-surface-hover border border-border hover:border-border-hover rounded-[1.5rem] p-6 transition-all duration-300 cursor-pointer h-full shadow-sm hover:shadow-elevated text-left w-full"
+              >
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="text-xl font-black text-heading group-hover:text-accent-primary transition-colors italic">{role.title}</h4>
@@ -200,14 +252,14 @@ export default function DashboardPage() {
                 <div className="mt-auto pt-4 border-t border-divider border-dashed">
                   <div className="text-[10px] font-black text-faint mb-2 uppercase tracking-wider italic">Required Core</div>
                   <div className="flex flex-wrap gap-2">
-                    {role.skills.map(skill => (
+                    {(role.skills ?? []).map(skill => (
                       <span key={skill} className="px-3 py-1.5 rounded-xl bg-tag-bg border border-tag-border text-tag-text text-xs font-black group-hover:bg-tag-hover-bg group-hover:border-tag-hover-border group-hover:text-tag-hover-text transition-colors shadow-sm">
                         {skill}
                       </span>
                     ))}
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </GlassCard>

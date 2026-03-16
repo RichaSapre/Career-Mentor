@@ -35,49 +35,52 @@ type MarketResponse = {
 };
 
 type RecommendationItem = {
-  role_id: string;
-  role_title: string;
-  fit_score: number;
+  role_id?: string;
+  roleId?: string;
+  role_title?: string;
+  roleTitle?: string;
+  fit_score?: number;
+  fitScore?: number;
   missing_skills?: string[];
+  missingSkills?: string[];
   explanation?: string;
 };
 
-// ----- Mock fallback -----
-const FALLBACK_MARKET: MarketResponse = {
-  job_title: "Data Analyst",
-  job_posting_count: 1240,
-  trend_series: [
-    { date: "2025-10", count: 820 },
-    { date: "2025-11", count: 910 },
-    { date: "2025-12", count: 970 },
-    { date: "2026-01", count: 1120 },
-    { date: "2026-02", count: 1240 },
-  ],
-  top_skills: [
-    { skill: "SQL", count: 880 },
-    { skill: "Excel", count: 760 },
-    { skill: "Python", count: 640 },
-    { skill: "Tableau", count: 520 },
-    { skill: "Statistics", count: 480 },
-  ],
-};
+/** Normalize API response (handles both { data } wrap and camelCase/snake_case) */
+function normalizeMarketResponse(raw: any): MarketResponse | null {
+  const m = raw?.data ?? raw;
+  if (!m) return null;
+  const weeklyDemand = m.weeklyDemand ?? m.weekly_demand ?? [];
+  const trendSeries = (m.trend_series ?? m.trendSeries ?? []).length
+    ? (m.trend_series ?? m.trendSeries)
+    : weeklyDemand.map((d: { week?: string; date?: string; count: number }) => ({ date: d.week ?? d.date ?? "", count: d.count }));
+  const topSkills = m.topSkills ?? m.top_skills ?? [];
+  return {
+    role: m.role,
+    job_title: m.job_title ?? m.jobTitle ?? m.role,
+    job_posting_count: m.job_posting_count ?? m.jobPostingCount ?? m.totalJobs,
+    trend_series: trendSeries,
+    top_skills: topSkills,
+  };
+}
 
-const FALLBACK_RECS: RecommendationItem[] = [
-  {
-    role_id: "demo-1",
-    role_title: "Data Analyst",
-    fit_score: 85,
-    missing_skills: ["Tableau"],
-    explanation: "Strong match based on your Python + SQL + analysis skills.",
-  },
-  {
-    role_id: "demo-2",
-    role_title: "Software Engineer",
-    fit_score: 74,
-    missing_skills: ["DSA practice"],
-    explanation: "Good fit, but strengthen DSA to improve competitiveness.",
-  },
-];
+/** Normalize recommendation item (camelCase or snake_case) */
+function normalizeRec(r: any): { role_id: string; role_title: string; fit_score: number; missing_skills: string[]; explanation?: string } {
+  return {
+    role_id: r.role_id ?? r.roleId ?? `role-${(r.role_title ?? r.roleTitle ?? "").toLowerCase().replace(/\s+/g, "-")}`,
+    role_title: r.role_title ?? r.roleTitle ?? "",
+    fit_score: r.fit_score ?? r.fitScore ?? 0,
+    missing_skills: r.missing_skills ?? r.missingSkills ?? [],
+    explanation: r.explanation,
+  };
+}
+
+const EMPTY_MARKET: MarketResponse = {
+  job_title: "",
+  job_posting_count: 0,
+  trend_series: [],
+  top_skills: [],
+};
 
 const SUGGESTED_ROLES = ["Data Analyst", "Software Engineer", "Product Manager", "Data Scientist", "DevOps Engineer"];
 
@@ -88,8 +91,8 @@ function MarketAnalyzerContent() {
 
   const [roleInput, setRoleInput] = React.useState(roleFromUrl);
   const [loading, setLoading] = React.useState(true);
-  const [market, setMarket] = React.useState<MarketResponse>(FALLBACK_MARKET);
-  const [recs, setRecs] = React.useState<RecommendationItem[]>(FALLBACK_RECS);
+  const [market, setMarket] = React.useState<MarketResponse>(EMPTY_MARKET);
+  const [recs, setRecs] = React.useState<RecommendationItem[]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   async function fetchMarketData(role: string) {
@@ -97,27 +100,25 @@ function MarketAnalyzerContent() {
     setError(null);
 
     try {
-      const m = (await apiFetch(API.marketAnalyzer, {
+      const raw = await apiFetch(API.marketAnalyzer, {
         method: "POST",
         body: JSON.stringify({ role: role.trim() }),
         auth: true,
-      })) as MarketResponse;
+      });
+      const m = normalizeMarketResponse(raw);
 
-      if (m) {
-        const trendData = m.trend_series ?? m.trendSeries;
-        const skillsData = m.top_skills ?? m.topSkills;
+      if (m && (m.trend_series?.length || m.top_skills?.length || m.job_posting_count)) {
         setMarket({
-          ...FALLBACK_MARKET,
+          ...EMPTY_MARKET,
           ...m,
-          job_title: m.job_title ?? m.jobTitle ?? m.role ?? role,
-          job_posting_count: m.job_posting_count ?? m.jobPostingCount,
-          trend_series: trendData?.length ? trendData : FALLBACK_MARKET.trend_series,
-          top_skills: skillsData?.length ? skillsData : FALLBACK_MARKET.top_skills,
+          job_title: m.job_title ?? m.role ?? role,
+          job_posting_count: m.job_posting_count ?? 0,
+          trend_series: m.trend_series?.length ? m.trend_series : [],
+          top_skills: m.top_skills?.length ? m.top_skills : [],
         });
       }
-    } catch {
-      setMarket(FALLBACK_MARKET);
-      setError("Market API not available, showing demo data.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Market API failed.");
     } finally {
       setLoading(false);
     }
@@ -132,38 +133,34 @@ function MarketAnalyzerContent() {
       setLoading(true);
       setError(null);
       try {
-        const m = (await apiFetch(API.marketAnalyzer, {
+        const raw = await apiFetch(API.marketAnalyzer, {
           method: "POST",
           body: JSON.stringify({ role }),
           auth: true,
-        })) as MarketResponse;
+        });
+        const m = normalizeMarketResponse(raw);
 
-        if (mounted && m) {
-          const trendData = m.trend_series ?? m.trendSeries;
-          const skillsData = m.top_skills ?? m.topSkills;
+        if (mounted && m && (m.trend_series?.length || m.top_skills?.length || m.job_posting_count)) {
           setMarket({
-            ...FALLBACK_MARKET,
+            ...EMPTY_MARKET,
             ...m,
-            job_title: m.job_title ?? m.jobTitle ?? m.role ?? role,
-            job_posting_count: m.job_posting_count ?? m.jobPostingCount,
-            trend_series: trendData?.length ? trendData : FALLBACK_MARKET.trend_series,
-            top_skills: skillsData?.length ? skillsData : FALLBACK_MARKET.top_skills,
+            job_title: m.job_title ?? m.role ?? role,
+            job_posting_count: m.job_posting_count ?? 0,
+            trend_series: m.trend_series?.length ? m.trend_series : [],
+            top_skills: m.top_skills?.length ? m.top_skills : [],
           });
         }
-      } catch {
-        if (mounted) {
-          setMarket(FALLBACK_MARKET);
-          setError("Market API not available, showing demo data.");
-        }
+      } catch (e) {
+        if (mounted) setError(e instanceof Error ? e.message : "Market API failed.");
       }
 
       try {
         const r = (await apiFetch(API.recommendedRoles, { method: "GET", auth: true })) as any;
-        const recList: RecommendationItem[] = Array.isArray(r) ? r : (r?.data ?? []);
+        const rawList = Array.isArray(r) ? r : (r?.data ?? []);
+        const recList = rawList.map((x: any) => normalizeRec(x)).filter((x: any) => x.role_title);
         if (mounted && recList?.length) setRecs(recList);
-        else if (mounted) setRecs(FALLBACK_RECS);
       } catch {
-        if (mounted) setRecs(FALLBACK_RECS);
+        // Recommendations failed - recs stay empty
       }
 
       if (mounted) setLoading(false);
@@ -173,10 +170,10 @@ function MarketAnalyzerContent() {
     return () => { mounted = false; };
   }, [roleFromUrl]);
 
-  const trend = market.trend_series ?? FALLBACK_MARKET.trend_series!;
-  const topSkills = market.top_skills ?? FALLBACK_MARKET.top_skills!;
-  const postingCount = market.job_posting_count ?? FALLBACK_MARKET.job_posting_count!;
-  const jobTitle = market.job_title ?? market.role ?? FALLBACK_MARKET.job_title!;
+  const trend = market.trend_series ?? [];
+  const topSkills = market.top_skills ?? [];
+  const postingCount = market.job_posting_count ?? 0;
+  const jobTitle = market.job_title ?? market.role ?? "—";
 
   // Average monthly job volume from trend
   const avgMonthly =
@@ -362,7 +359,7 @@ function MarketAnalyzerContent() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {(recs?.length ? recs : FALLBACK_RECS).map((r) => (
+          {(recs ?? []).map((r) => (
             <GlassCard key={r.role_id} className="group hover:bg-surface-hover hover:border-border-hover transition-all duration-300">
               <div className="flex justify-between gap-6">
                 <div className="flex-1">
