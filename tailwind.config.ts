@@ -24,9 +24,38 @@ export default {
 
         /* Semantic surface / background */
         background: "var(--background)",
+        foreground: "var(--foreground)",
         surface: "var(--surface)",
         "surface-hover": "var(--surface-hover)",
         "surface-inset": "var(--surface-inset)",
+
+        /* shadcn component tokens */
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--destructive)",
+        },
+        ring: "var(--ring)",
+        input: "var(--input)",
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        "muted-foreground": "var(--muted-foreground)",
 
         /* Semantic text */
         heading: "var(--heading)",

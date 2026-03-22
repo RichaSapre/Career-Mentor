@@ -13,7 +13,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  BrainCircuit
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/market-analyzer", label: "Market Analyzer", icon: LineChart },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/career-plan", label: "Career Plan", icon: BrainCircuit },
 ];
 
 export function SideNav() {
@@ -58,7 +59,7 @@ export function SideNav() {
     <>
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-surface backdrop-blur-xl border-b border-border flex items-center justify-between px-4 z-50">
-        <div className="text-lg font-black text-heading italic">Career Mentor</div>
+        <div className="text-lg font-black text-heading">Career Mentor</div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
@@ -106,7 +107,7 @@ export function SideNav() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
-            <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-heading to-muted tracking-tighter italic transition-all whitespace-nowrap">
+            <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-heading to-muted tracking-tighter transition-all whitespace-nowrap">
               Career Mentor
             </h1>
           )}
@@ -136,7 +137,7 @@ export function SideNav() {
                   isCollapsed ? "w-6 h-6" : "w-5 h-5",
                   isActive ? "text-white" : "text-faint group-hover:text-accent-primary"
                 )} />
-                {!isCollapsed && <span className="font-black text-sm italic">{item.label}</span>}
+                {!isCollapsed && <span className="font-black text-sm">{item.label}</span>}
                 {isActive && !isCollapsed && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />
                 )}
@@ -146,16 +147,37 @@ export function SideNav() {
         </nav>
 
         {/* Footer Actions */}
-        <div className="mt-auto pt-6 border-t border-divider">
+        <div className="mt-auto pt-6 px-1 border-t border-divider space-y-2">
+          <button
+            onClick={() => {
+              router.push("/profile");
+              setIsMobileOpen(false);
+            }}
+            className={cn(
+              "flex items-center w-full gap-3 rounded-xl bg-transparent px-3 py-3 text-sm font-black transition-all group",
+              path === "/profile"
+                ? "text-accent-primary"
+                : "text-muted hover:bg-surface-hover hover:text-heading",
+              isCollapsed && "justify-center px-0"
+            )}
+            title={isCollapsed ? "Profile" : ""}
+          >
+            <User size={20} className="shrink-0 group-hover:scale-110 transition-transform" />
+            {!isCollapsed && <span>Profile</span>}
+            {path === "/profile" && !isCollapsed && (
+              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-accent-primary shadow-[0_0_8px_var(--accent-primary)]" />
+            )}
+          </button>
+          
           <button
             onClick={signOut}
             className={cn(
-              "flex items-center gap-3 w-full rounded-xl bg-surface-inset px-3 py-3 text-sm font-black italic hover:bg-surface-hover transition-all text-muted hover:text-heading",
+              "flex items-center gap-3 w-full rounded-xl bg-surface-inset px-3 py-3 text-sm font-black hover:bg-surface-hover transition-all text-muted hover:text-heading group",
               isCollapsed && "justify-center px-0"
             )}
             title={isCollapsed ? "Sign out" : ""}
           >
-            <LogOut size={20} className="shrink-0" />
+            <LogOut size={20} className="shrink-0 group-hover:scale-110 transition-transform" />
             {!isCollapsed && <span>Sign out</span>}
           </button>
         </div>

@@ -3,245 +3,312 @@
 import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  LineChart as ReLineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, Search } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Search,
+  Briefcase,
+  DollarSign,
+  BarChart3,
+  Wifi,
+  Brain,
+  MapPin,
+  Building2,
+  Zap,
+  ChevronRight,
+  Check,
+  ChevronsUpDown,
+  Loader2,
+} from "lucide-react";
 
 import { GlassCard } from "@/components/glass/GlassCard";
 import { apiFetch } from "@/lib/api/client";
 import { API } from "@/lib/api/endpoints";
-import { tokenStore } from "@/lib/auth/tokenStore";
+import { MARKET_ROLES } from "@/lib/data/marketRoles";
+import type { MarketAnalysisResponse } from "@/lib/api/types";
 
-// ----- Types -----
-type TrendPoint = { date: string; count: number };
-type TopSkill = { skill: string; count: number };
+// ────────────────────────────────────────────
+// ROLE COMBOBOX
+// ────────────────────────────────────────────
+function RoleCombobox({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
-type MarketResponse = {
-  role?: string;
-  job_title?: string;
-  jobTitle?: string;
-  job_posting_count?: number;
-  jobPostingCount?: number;
-  trend_series?: TrendPoint[];
-  trendSeries?: TrendPoint[];
-  top_skills?: TopSkill[];
-  topSkills?: TopSkill[];
-};
+  const filtered = React.useMemo(() => {
+    if (!query) return [...MARKET_ROLES].slice(0, 30);
+    const q = query.toLowerCase();
+    return [...MARKET_ROLES]
+      .filter((r) => r.toLowerCase().includes(q))
+      .slice(0, 30);
+  }, [query]);
 
-type RecommendationItem = {
-  role_id?: string;
-  roleId?: string;
-  role_title?: string;
-  roleTitle?: string;
-  fit_score?: number;
-  fitScore?: number;
-  missing_skills?: string[];
-  missingSkills?: string[];
-  explanation?: string;
-};
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
-/** Normalize API response (handles both { data } wrap and camelCase/snake_case) */
-function normalizeMarketResponse(raw: any): MarketResponse | null {
-  const m = raw?.data ?? raw;
-  if (!m) return null;
-  const weeklyDemand = m.weeklyDemand ?? m.weekly_demand ?? [];
-  const trendSeries = (m.trend_series ?? m.trendSeries ?? []).length
-    ? (m.trend_series ?? m.trendSeries)
-    : weeklyDemand.map((d: { week?: string; date?: string; count: number }) => ({ date: d.week ?? d.date ?? "", count: d.count }));
-  const topSkills = m.topSkills ?? m.top_skills ?? [];
-  return {
-    role: m.role,
-    job_title: m.job_title ?? m.jobTitle ?? m.role,
-    job_posting_count: m.job_posting_count ?? m.jobPostingCount ?? m.totalJobs,
-    trend_series: trendSeries,
-    top_skills: topSkills,
-  };
+  return (
+    <div className="relative flex-1 min-w-0" ref={containerRef}>
+      <div
+        className="flex items-center h-12 rounded-xl bg-input-bg border border-input-border cursor-pointer"
+        onClick={() => {
+          setOpen(!open);
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }}
+      >
+        <Search className="w-5 h-5 text-muted ml-4 shrink-0" />
+        <input
+          ref={inputRef}
+          placeholder="Search a role — e.g. Software Engineer"
+          value={open ? query : value}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (!open) setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (query && filtered.length > 0) {
+                onChange(filtered[0]);
+                setQuery("");
+                setOpen(false);
+              }
+              onSubmit();
+            }
+          }}
+          disabled={disabled}
+          className="flex-1 h-full bg-transparent px-3 text-input-text placeholder:text-input-placeholder focus:outline-none"
+        />
+        <ChevronsUpDown className="w-4 h-4 text-muted mr-3 shrink-0" />
+      </div>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg backdrop-blur-xl">
+          {filtered.length > 0 ? (
+            filtered.map((role) => (
+              <button
+                type="button"
+                key={role}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(role);
+                  setQuery("");
+                  setOpen(false);
+                  setTimeout(() => onSubmit(), 50);
+                }}
+                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-surface-hover transition-colors flex items-center gap-2 ${value === role
+                    ? "text-accent-primary font-medium"
+                    : "text-body"
+                  }`}
+              >
+                {value === role && (
+                  <Check className="w-3.5 h-3.5 text-accent-primary" />
+                )}
+                {role}
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-sm text-muted">No roles found</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
-/** Normalize recommendation item (camelCase or snake_case) */
-function normalizeRec(r: any): { role_id: string; role_title: string; fit_score: number; missing_skills: string[]; explanation?: string } {
-  return {
-    role_id: r.role_id ?? r.roleId ?? `role-${(r.role_title ?? r.roleTitle ?? "").toLowerCase().replace(/\s+/g, "-")}`,
-    role_title: r.role_title ?? r.roleTitle ?? "",
-    fit_score: r.fit_score ?? r.fitScore ?? 0,
-    missing_skills: r.missing_skills ?? r.missingSkills ?? [],
-    explanation: r.explanation,
-  };
+// ────────────────────────────────────────────
+// FORMAT HELPERS
+// ────────────────────────────────────────────
+function formatCurrency(n: number) {
+  if (n >= 1000) return `$${Math.round(n / 1000)}K`;
+  return `$${n.toLocaleString()}`;
 }
 
-const EMPTY_MARKET: MarketResponse = {
-  job_title: "",
-  job_posting_count: 0,
-  trend_series: [],
-  top_skills: [],
-};
+function statusColor(status: string) {
+  const s = status.toLowerCase();
+  if (s === "strong") return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (s === "moderate") return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+  return "bg-red-500/10 text-red-500 border-red-500/20";
+}
 
-const SUGGESTED_ROLES = ["Data Analyst", "Software Engineer", "Product Manager", "Data Scientist", "DevOps Engineer"];
+function demandColor(score: number) {
+  if (score >= 70) return "text-emerald-500";
+  if (score >= 40) return "text-amber-500";
+  return "text-red-500";
+}
 
+// ────────────────────────────────────────────
+// MAIN CONTENT
+// ────────────────────────────────────────────
 function MarketAnalyzerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roleFromUrl = searchParams.get("role") || "Data Analyst";
+  const roleFromUrl = searchParams.get("role") || "";
 
-  const [roleInput, setRoleInput] = React.useState(roleFromUrl);
-  const [loading, setLoading] = React.useState(true);
-  const [market, setMarket] = React.useState<MarketResponse>(EMPTY_MARKET);
-  const [recs, setRecs] = React.useState<RecommendationItem[]>([]);
+  const [roleInput, setRoleInput] = React.useState(roleFromUrl || "Software Engineer");
+  const [loading, setLoading] = React.useState(false);
+  const [data, setData] = React.useState<MarketAnalysisResponse | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [recs, setRecs] = React.useState<any[]>([]);
 
-  async function fetchMarketData(role: string) {
-    setLoading(true);
-    setError(null);
+  const fetchRef = React.useRef<() => void>();
 
-    try {
-      const raw = await apiFetch(API.marketAnalyzer, {
-        method: "POST",
-        body: JSON.stringify({ role: role.trim() }),
-        auth: true,
-      });
-      const m = normalizeMarketResponse(raw);
-
-      if (m && (m.trend_series?.length || m.top_skills?.length || m.job_posting_count)) {
-        setMarket({
-          ...EMPTY_MARKET,
-          ...m,
-          job_title: m.job_title ?? m.role ?? role,
-          job_posting_count: m.job_posting_count ?? 0,
-          trend_series: m.trend_series?.length ? m.trend_series : [],
-          top_skills: m.top_skills?.length ? m.top_skills : [],
-        });
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Market API failed.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  React.useEffect(() => {
-    let mounted = true;
-    const role = roleFromUrl || roleInput.trim() || "Data Analyst";
-    setRoleInput(role);
-
-    async function load() {
+  const fetchData = React.useCallback(
+    async (role: string) => {
+      if (!role.trim()) return;
       setLoading(true);
       setError(null);
-      try {
-        const raw = await apiFetch(API.marketAnalyzer, {
-          method: "POST",
-          body: JSON.stringify({ role }),
-          auth: true,
-        });
-        const m = normalizeMarketResponse(raw);
 
-        if (mounted && m && (m.trend_series?.length || m.top_skills?.length || m.job_posting_count)) {
-          setMarket({
-            ...EMPTY_MARKET,
-            ...m,
-            job_title: m.job_title ?? m.role ?? role,
-            job_posting_count: m.job_posting_count ?? 0,
-            trend_series: m.trend_series?.length ? m.trend_series : [],
-            top_skills: m.top_skills?.length ? m.top_skills : [],
-          });
+      try {
+        const raw = (await apiFetch(API.marketAnalyzer, {
+          method: "POST",
+          body: JSON.stringify({ role: role.trim() }),
+          auth: true,
+        })) as any;
+
+        const d = raw?.data ?? raw;
+        if (d) {
+          setData(d as MarketAnalysisResponse);
         }
       } catch (e) {
-        if (mounted) setError(e instanceof Error ? e.message : "Market API failed.");
+        setError(e instanceof Error ? e.message : "Failed to fetch market data.");
+      } finally {
+        setLoading(false);
       }
+    },
+    []
+  );
 
+  // Store latest fetchData for combobox to call
+  fetchRef.current = () => fetchData(roleInput);
+
+  React.useEffect(() => {
+    const role = roleFromUrl || "";
+    setRoleInput(role);
+    if (role) fetchData(role);
+
+    // Also fetch recommendations
+    (async () => {
       try {
-        const r = (await apiFetch(API.recommendedRoles, { method: "GET", auth: true })) as any;
-        const rawList = Array.isArray(r) ? r : (r?.data ?? []);
-        const recList = rawList.map((x: any) => normalizeRec(x)).filter((x: any) => x.role_title);
-        if (mounted && recList?.length) setRecs(recList);
+        const r = (await apiFetch(API.recommendedRoles, {
+          method: "GET",
+          auth: true,
+        })) as any;
+        const rawList = Array.isArray(r) ? r : r?.data ?? [];
+        const mapped = rawList
+          .slice(0, 4)
+          .map((x: any) => ({
+            roleId:
+              x.roleId ??
+              x.role_id ??
+              (x.roleTitle ?? x.role_title ?? "").toLowerCase().replace(/\s+/g, "-"),
+            roleTitle: x.roleTitle ?? x.role_title ?? "",
+            fitScore: x.fitScore ?? x.fit_score ?? 0,
+            missingSkills:
+              x.missingSkills ?? x.missing_skills ?? [],
+            explanation: x.explanation,
+            trendDirection: x.trendDirection ?? x.trend_direction,
+          }))
+          .filter((x: any) => x.roleTitle);
+        if (mapped.length) setRecs(mapped);
       } catch {
-        // Recommendations failed - recs stay empty
+        // silent
       }
-
-      if (mounted) setLoading(false);
-    }
-
-    load();
-    return () => { mounted = false; };
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleFromUrl]);
 
-  const trend = market.trend_series ?? [];
-  const topSkills = market.top_skills ?? [];
-  const postingCount = market.job_posting_count ?? 0;
-  const jobTitle = market.job_title ?? market.role ?? "—";
+  // Prepare trend data — filter to recent periods only
+  const trendData = React.useMemo(() => {
+    if (!data?.weeklyDemand?.length) return [];
+    const sorted = [...data.weeklyDemand].sort(
+      (a, b) => new Date(a.week).getTime() - new Date(b.week).getTime()
+    );
+    // Take last 20 weeks max for a clean chart
+    const recent = sorted.slice(-20);
+    return recent.map((d) => ({
+      date: new Date(d.week).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      count: d.count,
+    }));
+  }, [data]);
 
-  // Average monthly job volume from trend
-  const avgMonthly =
-    trend?.length > 0
-      ? Math.round(trend.reduce((a, t) => a + t.count, 0) / trend.length)
-      : postingCount;
-
-  function signOut() {
-    tokenStore.clear();
-    router.push("/welcome");
-  }
+  const topSkills = data?.topSkills ?? [];
+  const topLocations = data?.topLocations ?? [];
+  const topCompanies = (data?.topCompanies ?? []).filter(
+    (c) => c.company !== null
+  );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="mx-auto max-w-7xl space-y-8">
+      {/* ── HEADER ── */}
+      <div className="flex flex-col gap-6">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-sm font-medium mb-4">
-            <TrendingUp className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4" />
             <span>Market Intelligence</span>
           </div>
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)]">
             Market Analysis
           </h1>
           <p className="text-muted mt-2 text-lg">
-            Real-time hiring trends and skill saturation data.
+            Real-time hiring trends, salary data, and skill demand analysis.
           </p>
         </div>
 
-        {/* Role search */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
-            <input
-              type="text"
-              value={roleInput}
-              onChange={(e) => setRoleInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchMarketData(roleInput))}
-              placeholder="e.g. Software Engineer"
-              className="w-full sm:w-64 pl-12 pr-4 py-3 rounded-xl bg-input-bg border border-input-border text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:border-accent-primary transition-all"
-            />
-          </div>
+        {/* Search bar */}
+        <div className="flex gap-3">
+          <RoleCombobox
+            value={roleInput}
+            onChange={setRoleInput}
+            onSubmit={() => fetchData(roleInput)}
+            disabled={loading}
+          />
           <button
             type="button"
-            onClick={() => fetchMarketData(roleInput)}
+            onClick={() => fetchData(roleInput)}
             disabled={loading || !roleInput.trim()}
-            className="px-6 py-3 rounded-xl bg-btn-primary-bg text-btn-primary-text font-semibold hover:bg-btn-primary-hover transition-all disabled:opacity-60"
+            className="px-6 py-3 rounded-xl bg-btn-primary-bg text-btn-primary-text font-semibold hover:bg-btn-primary-hover transition-all disabled:opacity-60 flex items-center gap-2 shrink-0"
           >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
             {loading ? "Analyzing…" : "Analyze"}
           </button>
         </div>
-      </div>
-
-      {/* Quick role buttons */}
-      <div className="flex flex-wrap gap-2">
-        {SUGGESTED_ROLES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => {
-              setRoleInput(r);
-              fetchMarketData(r);
-            }}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-inset border border-border hover:border-accent-primary hover:text-accent-primary transition-all disabled:opacity-60"
-          >
-            {r}
-          </button>
-        ))}
       </div>
 
       {error && (
@@ -250,155 +317,388 @@ function MarketAnalyzerContent() {
         </div>
       )}
 
-      {/* Top metrics */}
-      <div className="grid gap-5 md:grid-cols-3">
-        <GlassCard className="hover:border-border-hover transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Active Postings</div>
-          <div className="mt-2 text-3xl font-black italic text-heading">
-            {loading ? "…" : postingCount.toLocaleString()}
+      {loading && !data && (
+        <div className="min-h-[40vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-accent-primary animate-spin" />
+            <span className="text-muted">Analyzing market data…</span>
           </div>
-        </GlassCard>
-
-        <GlassCard className="hover:border-border-hover transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Most Demanded</div>
-          <div className="mt-2 text-3xl font-black italic text-accent-primary">
-            {loading ? "…" : (topSkills?.[0]?.skill ?? "—")}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="hover:border-border-hover transition-all">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Avg Monthly Jobs</div>
-          <div className="mt-2 text-3xl font-black italic text-accent-secondary">
-            {loading ? "…" : avgMonthly?.toLocaleString() ?? "—"}
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Chart + top skills */}
-      <div className="grid gap-8 md:grid-cols-3">
-        <GlassCard className="md:col-span-2">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-faint">Trend Dataset</div>
-              <div className="text-xl font-bold text-heading mt-1">{jobTitle}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-accent-primary" />
-              <span className="text-xs text-muted font-medium tracking-wide">Volume</span>
-            </div>
-          </div>
-
-          <div className="mt-4" style={{ height: 320 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ReLineChart data={trend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="6 6" stroke="var(--border)" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "var(--faint)", fontSize: 10, fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--surface-inset)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    color: 'var(--heading)',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke="var(--accent-primary)"
-                  strokeWidth={4}
-                  dot={{ r: 4, fill: 'var(--accent-primary)', strokeWidth: 2, stroke: 'var(--background)' }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              </ReLineChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
-
-        <GlassCard>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-faint mb-6">Market Saturation</div>
-
-          <div className="space-y-4">
-            {topSkills.map((s, idx) => (
-              <div key={s.skill} className="group flex flex-col gap-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-muted group-hover:text-heading transition-colors">{s.skill}</span>
-                  <span className="text-faint font-medium">{s.count} mentions</span>
-                </div>
-                <div className="h-1.5 w-full bg-surface-inset rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-accent-primary/40 rounded-full group-hover:bg-accent-primary transition-all duration-500"
-                    style={{ width: `${(s.count / topSkills[0].count) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 p-4 rounded-xl bg-badge-info-bg border border-badge-info-border text-xs text-badge-info-text leading-relaxed font-medium">
-            Personalized recommendations are generated by cross-referencing these skills with your profile.
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Recommendations */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-2xl font-bold text-heading">Personalized Trajectory</h2>
-          <div className="text-sm text-muted font-medium">Profile Match Consensus</div>
         </div>
+      )}
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {(recs ?? []).map((r) => (
-            <GlassCard key={r.role_id} className="group hover:bg-surface-hover hover:border-border-hover transition-all duration-300">
-              <div className="flex justify-between gap-6">
-                <div className="flex-1">
-                  <div className="text-xl font-bold text-heading group-hover:text-accent-primary transition-colors">{r.role_title}</div>
-                  <p className="mt-2 text-sm text-muted leading-relaxed">{r.explanation}</p>
-                  
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {(r.missing_skills ?? []).map((s) => (
-                      <span
-                        key={s}
-                        className="rounded-lg bg-tag-bg border border-tag-border px-3 py-1 text-xs text-tag-text font-medium"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
+      {data && (
+        <>
+          {/* ── HERO METRICS ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Jobs */}
+            <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-badge-info-bg text-badge-info-text">
+                  <Briefcase className="w-4 h-4" />
                 </div>
-                <div className="flex flex-col items-center justify-center min-w-[80px]">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-faint mb-1">Fit</div>
-                  <div className="text-4xl font-black italic tracking-tighter text-accent-primary">
-                    {r.fit_score}%
-                  </div>
-                </div>
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusColor(data.marketStatus)}`}
+                >
+                  {data.marketStatus}
+                </span>
+              </div>
+              <div className="text-3xl font-black text-heading tracking-tight">
+                {data.totalJobs.toLocaleString()}
+              </div>
+              <div className="text-xs text-faint font-medium mt-1 uppercase tracking-wider">
+                Total Jobs
               </div>
             </GlassCard>
-          ))}
-        </div>
-      </div>
+
+            {/* Salary Range */}
+            <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-heading tracking-tight">
+                {formatCurrency(data.salaryRange.avgMin)} –{" "}
+                {formatCurrency(data.salaryRange.avgMax)}
+              </div>
+              <div className="text-xs text-faint font-medium mt-1 uppercase tracking-wider">
+                Avg Salary Range
+              </div>
+            </GlassCard>
+
+            {/* Demand Score */}
+            <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div className="flex items-center gap-1 text-xs font-bold text-muted">
+                  {data.trendDirection === "Increasing" ? (
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                  ) : (
+                    <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                  )}
+                  {data.trendDirection}
+                </div>
+              </div>
+              <div
+                className={`text-3xl font-black tracking-tight ${demandColor(data.demandScore)}`}
+              >
+                {data.demandScore}
+              </div>
+              <div className="text-xs text-faint font-medium mt-1 uppercase tracking-wider">
+                Demand Score
+              </div>
+            </GlassCard>
+
+            {/* Remote Share */}
+            <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500">
+                  <Wifi className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-3xl font-black text-heading tracking-tight">
+                {Math.round(data.remoteShare)}%
+              </div>
+              <div className="text-xs text-faint font-medium mt-1 uppercase tracking-wider">
+                Remote Share
+              </div>
+            </GlassCard>
+          </div>
+          {/* ── AI ANALYSIS ── */}
+          {data.aiAnalysis && (
+            <GlassCard className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 rounded-lg bg-accent-primary/10 text-accent-primary">
+                  <Brain className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-heading">
+                    AI Market Analysis
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-body leading-relaxed">
+                {data.aiAnalysis}
+              </p>
+            </GlassCard>
+          )}
+          {/* ── TREND CHART ── */}
+          {trendData.length > 0 && (
+            <GlassCard className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-faint">
+                    Weekly Demand Trend
+                  </div>
+                  <div className="text-xl font-bold text-heading mt-1">
+                    {data.role}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-accent-primary" />
+                  <span className="text-xs text-muted font-medium">
+                    Job Postings / Week
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={trendData}
+                    margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="areaGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="var(--accent-primary)"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="var(--accent-primary)"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="6 6"
+                      stroke="var(--border)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      tick={{
+                        fill: "var(--faint)",
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{
+                        fill: "var(--faint)",
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--surface-inset)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        color: "var(--heading)",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="var(--accent-primary)"
+                      strokeWidth={3}
+                      fill="url(#areaGradient)"
+                      dot={{
+                        r: 3,
+                        fill: "var(--accent-primary)",
+                        strokeWidth: 2,
+                        stroke: "var(--background)",
+                      }}
+                      activeDot={{ r: 5, strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* ── THREE-COLUMN GRID: Skills / Locations / Companies ── */}
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Top Skills */}
+            <GlassCard className="p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Zap className="w-4 h-4 text-accent-primary" />
+                <div className="text-xs font-bold uppercase tracking-widest text-faint">
+                  Top Skills
+                </div>
+              </div>
+              <div className="space-y-3">
+                {topSkills.slice(0, 10).map((s, idx) => (
+                  <div key={s.skill} className="group flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-muted group-hover:text-heading transition-colors capitalize">
+                        {s.skill}
+                      </span>
+                      <span className="text-xs text-faint font-medium">
+                        {s.count.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-surface-inset rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-accent-primary/40 rounded-full group-hover:bg-accent-primary transition-all duration-500"
+                        style={{
+                          width: `${topSkills[0]?.count ? (s.count / topSkills[0].count) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+
+            {/* Top Locations */}
+            <GlassCard className="p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <MapPin className="w-4 h-4 text-accent-secondary" />
+                <div className="text-xs font-bold uppercase tracking-widest text-faint">
+                  Top Locations
+                </div>
+              </div>
+              <div className="space-y-3">
+                {topLocations.slice(0, 8).map((loc) => (
+                  <div
+                    key={loc.location}
+                    className="flex items-center justify-between p-3 rounded-xl bg-surface-inset hover:bg-surface-hover transition-colors"
+                  >
+                    <span className="text-sm font-medium text-body">
+                      {loc.location}
+                    </span>
+                    <span className="text-xs font-bold text-accent-secondary bg-accent-secondary/10 px-2 py-0.5 rounded-full">
+                      {loc.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+
+            {/* Top Companies */}
+            <GlassCard className="p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Building2 className="w-4 h-4 text-violet-500" />
+                <div className="text-xs font-bold uppercase tracking-widest text-faint">
+                  Top Companies
+                </div>
+              </div>
+              <div className="space-y-3">
+                {topCompanies.slice(0, 10).map((c, idx) => (
+                  <div
+                    key={c.company ?? idx}
+                    className="flex items-center justify-between p-3 rounded-xl bg-surface-inset hover:bg-surface-hover transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-500 text-xs font-bold">
+                        {idx + 1}
+                      </div>
+                      <span className="text-sm font-medium text-body">
+                        {c.company}
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">
+                      {c.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          </div>
+
+
+
+          {/* ── RECOMMENDED ROLES ── */}
+          {recs.length > 0 && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-heading">
+                  Recommended for You
+                </h2>
+                <button
+                  onClick={() => router.push("/jobs")}
+                  className="text-sm text-accent-primary hover:opacity-80 font-semibold flex items-center gap-1 transition-colors"
+                >
+                  View All <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                {recs.map((r, idx) => (
+                  <button
+                    key={r.roleId ?? idx}
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/market-analyzer?role=${encodeURIComponent(r.roleTitle)}`
+                      )
+                    }
+                    className="group text-left"
+                  >
+                    <GlassCard className="h-full hover:border-border-hover transition-all duration-300 p-6">
+                      <div className="flex justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="text-lg font-bold text-heading group-hover:text-accent-primary transition-colors">
+                            {r.roleTitle}
+                          </div>
+                          {r.explanation && (
+                            <p className="mt-2 text-sm text-muted line-clamp-2">
+                              {r.explanation}
+                            </p>
+                          )}
+                          {r.missingSkills?.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {r.missingSkills.slice(0, 4).map((s: string) => (
+                                <span
+                                  key={s}
+                                  className="rounded-lg bg-tag-bg border border-tag-border px-2.5 py-1 text-xs text-tag-text font-medium"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-center justify-center min-w-[70px]">
+                          <div className="text-xs font-bold uppercase tracking-widest text-faint mb-1">
+                            Fit
+                          </div>
+                          <div className="text-3xl font-black tracking-tighter text-accent-primary">
+                            {r.fitScore}%
+                          </div>
+                        </div>
+                      </div>
+                    </GlassCard>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
+// ────────────────────────────────────────────
+// PAGE EXPORT
+// ────────────────────────────────────────────
 export default function MarketAnalyzerPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-[60vh] flex items-center justify-center text-muted">
-        <span className="animate-pulse">Loading market analysis...</span>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center text-muted">
+          <span className="animate-pulse">Loading market analysis...</span>
+        </div>
+      }
+    >
       <MarketAnalyzerContent />
     </Suspense>
   );

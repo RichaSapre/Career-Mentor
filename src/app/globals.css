@@ -1,5 +1,3 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,7 +18,7 @@
 @layer base {
   :root {
     /* ── Backgrounds ── */
-    --background: oklch(1 0 0);
+    --background: #F8FAFF;
     --surface: rgba(255, 255, 255, 0.45);
     /* Highly translucent frosted glass */
     --surface-hover: rgba(255, 255, 255, 0.60);
@@ -29,11 +27,11 @@
     /* ── Typography ── */
     --heading: #0F172A;
     --body: #1E293B;
-    --muted: oklch(0.97 0 0);
+    --muted: #475569;
     --faint: #64748B;
 
     /* ── Borders & Dividers ── */
-    --border: oklch(0.922 0 0);
+    --border: rgba(255, 255, 255, 0.50);
     /* Bright edge reflection */
     --border-hover: rgba(255, 255, 255, 0.80);
     --divider: rgba(15, 23, 42, 0.05);
@@ -102,6 +100,8 @@
     /* ── Glow Colors (for gradients) ── */
     --glow-1: rgba(14, 165, 233, var(--glow-opacity));
     --glow-2: rgba(6, 182, 212, var(--glow-opacity));
+
+    /* ── shadcn tokens ── */
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
@@ -135,7 +135,7 @@
 
   .dark {
     /* ── Backgrounds ── */
-    --background: oklch(0.145 0 0);
+    --background: #0B0E14;
     /* Deep dark background to make hues pop */
     --surface: rgba(255, 255, 255, 0.03);
     /* Liquid glass translucency */
@@ -146,13 +146,13 @@
     --heading: #F8FAFC;
     --body: #CBD5E1;
     /* slate-300 */
-    --muted: oklch(0.269 0 0);
+    --muted: #94A3B8;
     /* slate-400 */
     --faint: #475569;
     /* slate-600 */
 
     /* ── Borders & Dividers ── */
-    --border: oklch(1 0 0 / 10%);
+    --border: rgba(255, 255, 255, 0.18);
     /* Whitish edge for glass effect */
     --border-hover: rgba(255, 255, 255, 0.35);
     --divider: rgba(255, 255, 255, 0.05);
@@ -222,6 +222,8 @@
     /* ── Glow Colors (for gradients) ── */
     --glow-1: rgba(34, 211, 238, var(--glow-opacity));
     --glow-2: rgba(20, 184, 166, var(--glow-opacity));
+
+    /* ── shadcn tokens ── */
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
@@ -233,7 +235,7 @@
     --secondary-foreground: oklch(0.985 0 0);
     --muted-foreground: oklch(0.708 0 0);
     --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
@@ -256,13 +258,11 @@
     --font-sans: var(--font-sans);
   }
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 

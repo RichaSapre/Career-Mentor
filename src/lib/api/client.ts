@@ -59,7 +59,20 @@ async function tryRealFetch<T>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || `Request failed: ${res.status}`);
+    let errorMessage = text || `Request failed: ${res.status}`;
+    try {
+      if (text) {
+        const jsonError = JSON.parse(text);
+        if (jsonError.message) {
+          errorMessage = typeof jsonError.message === "string" ? jsonError.message : JSON.stringify(jsonError.message);
+        } else if (jsonError.error) {
+          errorMessage = typeof jsonError.error === "string" ? jsonError.error : JSON.stringify(jsonError.error);
+        }
+      }
+    } catch (e) {
+      // ignore JSON parse errors and fallback to raw text
+    }
+    throw new Error(errorMessage);
   }
 
   return (await res.json()) as T;

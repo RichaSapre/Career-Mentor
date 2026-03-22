@@ -12,5 +12,6 @@ export const API = {
   
   marketAnalyzer: "/market/analyze",
   recommendedRoles: "/recommendations",
+  generateRecommendations: "/recommendations/generate",
   extractResume: "/profile/extract-resume",
 };

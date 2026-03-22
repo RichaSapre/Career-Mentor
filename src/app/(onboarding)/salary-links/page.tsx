@@ -16,12 +16,6 @@ import type { SignupPayload, Tokens } from "@/lib/api/types";
 
 // Map draft values to backend-expected API values (handles legacy localStorage values)
 const CITIZENSHIP_MAP: Record<string, string> = {
-  us_citizen: "US Citizen",
-  permanent_resident: "Green Card",
-  h1b: "Work Visa",
-  f1_opt: "Student Visa",
-  need_sponsorship: "No Authorization",
-  other: "Other",
   "US Citizen": "US Citizen",
   "Green Card": "Green Card",
   "Work Visa": "Work Visa",
@@ -92,10 +86,10 @@ export default function SalaryLinksPage() {
     const salaryRange =
       values.salaryMin && values.salaryMax
         ? {
-            min: parseInt(values.salaryMin, 10),
-            max: parseInt(values.salaryMax, 10),
-            currency: "USD",
-          }
+          min: parseInt(values.salaryMin, 10),
+          max: parseInt(values.salaryMax, 10),
+          currency: "USD",
+        }
         : undefined;
 
     signupDraft.set({

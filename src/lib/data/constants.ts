@@ -1,20 +1,20 @@
 export const DEGREE_LEVELS = [
-  "High School",
   "Associate",
   "Bachelors",
   "Masters",
   "PhD",
+  "Bootcamp",
   "Other",
 ] as const;
 
-// Values must match backend validation exactly (authValidation.ts)
+// USA-specific visa/work authorization types for international students
 export const CITIZENSHIP_STATUSES = [
   { value: "US Citizen", label: "US Citizen" },
-  { value: "Green Card", label: "Permanent Resident" },
-  { value: "Work Visa", label: "H-1B / Work Visa" },
-  { value: "Student Visa", label: "F-1/OPT" },
-  { value: "No Authorization", label: "Need Sponsorship" },
-  { value: "Other", label: "Other Work Authorization" },
+  { value: "Green Card", label: "Green Card" },
+  { value: "Work Visa", label: "Work Visa" },
+  { value: "Student Visa", label: "Student Visa" },
+  { value: "No Authorization", label: "No Authorization" },
+  { value: "Other", label: "Other" },
 ] as const;
 
 export const REMOTE_PREFERENCES = [
@@ -26,14 +26,22 @@ export const REMOTE_PREFERENCES = [
 
 export const INDUSTRIES = [
   "Technology",
+  "AI / Machine Learning",
   "Fintech",
-  "Healthcare",
+  "Healthcare / HealthTech",
   "E-commerce",
-  "Education",
-  "Finance",
+  "Cybersecurity",
+  "Cloud Computing / SaaS",
+  "Blockchain / Web3",
+  "Education / EdTech",
+  "Finance / Banking",
   "Consulting",
-  "Manufacturing",
-  "Media",
+  "Robotics / IoT",
+  "Gaming / AR / VR",
+  "Telecom / Networking",
+  "Manufacturing / Hardware",
+  "Media / Entertainment",
+  "Government / Defense Tech",
   "Other",
 ] as const;
 
@@ -43,4 +51,29 @@ export const PROFICIENCY_LEVELS = [
   { value: 3, label: "Intermediate" },
   { value: 4, label: "Advanced" },
   { value: 5, label: "Expert" },
+] as const;
+
+// Common tech majors for international students at US universities
+export const COMMON_MAJORS = [
+  "Computer Science",
+  "Data Science",
+  "Information Technology",
+  "Software Engineering",
+  "Computer Engineering",
+  "Electrical Engineering",
+  "Artificial Intelligence",
+  "Machine Learning",
+  "Cybersecurity",
+  "Information Systems",
+  "Applied Mathematics",
+  "Statistics",
+  "Bioinformatics",
+  "Computational Biology",
+  "Robotics",
+  "Human-Computer Interaction",
+  "Cloud Computing",
+  "Network Engineering",
+  "Business Analytics",
+  "Quantitative Finance",
+  "Other",
 ] as const;

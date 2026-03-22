@@ -10,7 +10,10 @@ export function useMe(enabled = true) {
   const hasToken = typeof window !== "undefined" && !!tokenStore.getAccess();
   return useQuery({
     queryKey: ["me"],
-    queryFn: () => apiFetch<UserProfile>(API.getUserDetails, { method: "GET" }),
+    queryFn: async () => {
+      const res = await apiFetch<any>(API.getUserDetails, { method: "GET" });
+      return (res?.data ?? res) as UserProfile;
+    },
     enabled: enabled && hasToken,
   });
 }
