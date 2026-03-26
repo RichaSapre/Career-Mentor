@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function proxyRequest(req: NextRequest, { params }: { params: { path: string[] } }) {
+async function proxyRequest(req: NextRequest, { params }: { params: { path: string[] } }) {
   const BACKEND_URL = process.env.BACKEND_URL ?? "http://34.69.168.143:3000/alpha/api/v1";
   
   const method = req.method;
