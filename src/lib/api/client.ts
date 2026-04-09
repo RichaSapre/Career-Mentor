@@ -43,7 +43,17 @@ async function tryRealFetch<T>(
   const { auth = true, ...rest } = options;
 
   const headers = new Headers(rest.headers);
-  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const method = (rest.method ?? "GET").toUpperCase();
+  const canHaveBody = method !== "GET" && method !== "HEAD";
+  const hasBody = canHaveBody && rest.body !== undefined && rest.body !== null;
+
+  if (
+    hasBody &&
+    !headers.has("Content-Type") &&
+    !(typeof FormData !== "undefined" && rest.body instanceof FormData)
+  ) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (auth) {
     const access = tokenStore.getAccess();

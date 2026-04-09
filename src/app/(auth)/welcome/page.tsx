@@ -61,7 +61,7 @@ export default function WelcomePage() {
           <h1 className={`${playfair.className} text-5xl md:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] mb-6`}>
             Career Mentor
           </h1>
-          <p className="text-lg text-muted max-w-lg font-medium leading-relaxed italic">
+          <p className="text-lg text-muted max-w-lg font-medium leading-relaxed ">
             Unlock your potential. Advanced AI-driven career recommendations and real-time market simulation tailored to your unique trajectory.
           </p>
         </div>
@@ -74,7 +74,7 @@ export default function WelcomePage() {
               <div className="p-3 rounded-xl bg-badge-info-bg text-badge-info-text border border-badge-info-border">
                 <ArrowRight className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-bold text-heading italic">Welcome Back</h2>
+              <h2 className="text-2xl font-bold text-heading ">Welcome Back</h2>
             </div>
             <p className="text-muted mb-8 font-medium">Access your personalized dashboard and continue your journey.</p>
           </div>
@@ -94,7 +94,7 @@ export default function WelcomePage() {
               <div className="p-3 rounded-xl bg-badge-success-bg text-badge-success-text border border-badge-success-border">
                 <UserPlus className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-bold text-heading italic">New Here?</h2>
+              <h2 className="text-2xl font-bold text-heading ">New Here?</h2>
             </div>
             <p className="text-muted mb-8 font-medium">Build your profile and let our AI map out your optimal career path.</p>
           </div>
@@ -110,8 +110,8 @@ export default function WelcomePage() {
         {/* Guest Explorer Card */}
         <div className="md:col-span-12 lg:col-span-7 flex flex-col sm:flex-row items-center justify-between overflow-hidden rounded-[2.5rem] bg-surface border border-border backdrop-blur-3xl shadow-card p-8 relative group transition-all hover:border-border-hover gemini-glow">
           <div className="relative z-10 flex-1 mb-6 sm:mb-0">
-            <h3 className="text-xl font-bold text-heading mb-2 italic">Public Market Analysis</h3>
-            <p className="text-sm text-muted max-w-sm font-medium italic">Explore live market trends and skill demand without creating an account.</p>
+            <h3 className="text-xl font-bold text-heading mb-2 ">Public Market Analysis</h3>
+            <p className="text-sm text-muted max-w-sm font-medium ">Explore live market trends and skill demand without creating an account.</p>
           </div>
 
           <Link

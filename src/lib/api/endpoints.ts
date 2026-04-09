@@ -11,6 +11,7 @@ export const API = {
   patchProfile: "/auth/user", // partial profile update
   
   marketAnalyzer: "/market/analyze",
+  marketJobs: "/jobs/listings",
   recommendedRoles: "/recommendations",
   generateRecommendations: "/recommendations/generate",
   extractResume: "/profile/extract-resume",

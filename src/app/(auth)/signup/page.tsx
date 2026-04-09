@@ -651,7 +651,7 @@ export default function SignupPage() {
       }
       signupDraft.clear();
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      router.push("/jobs");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Signup failed. Please try again."

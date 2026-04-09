@@ -89,7 +89,7 @@ export default function ProfileEditPage() {
       </button>
 
       <GlassCard className="p-8">
-        <h1 className="text-2xl font-black text-heading mb-6 italic">Edit Profile</h1>
+        <h1 className="text-2xl font-black text-heading mb-6 ">Edit Profile</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

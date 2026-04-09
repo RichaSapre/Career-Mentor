@@ -151,7 +151,7 @@ export default function SalaryLinksPage() {
         tokenStore.set({ accessToken, refreshToken });
       }
       signupDraft.clear();
-      router.push("/dashboard");
+      router.push("/jobs");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed. Please try again.");
     } finally {

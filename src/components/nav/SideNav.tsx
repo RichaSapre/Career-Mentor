@@ -23,7 +23,7 @@ import { apiFetch } from "@/lib/api/client";
 import { API } from "@/lib/api/endpoints";
 
 const items = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  // { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/market-analyzer", label: "Market Analyzer", icon: LineChart },
   { href: "/career-plan", label: "Career Plan", icon: BrainCircuit },
@@ -90,7 +90,10 @@ export function SideNav() {
         {/* Toggle Button for Desktop */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex absolute -right-3 top-20 w-6 h-6 rounded-full border border-border bg-surface items-center justify-center text-muted hover:text-accent-primary shadow-sm z-50 hover:scale-110 transition-all"
+          className={cn(
+            "hidden md:flex w-7 h-7 rounded-full border border-border bg-surface items-center justify-center text-muted hover:text-accent-primary shadow-sm hover:scale-110 transition-all mb-4",
+            isCollapsed ? "self-center" : "self-end"
+          )}
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
@@ -101,7 +104,7 @@ export function SideNav() {
             "flex items-center gap-3 mb-10 px-2 group cursor-pointer transition-all",
             isCollapsed ? "justify-center" : "justify-start"
           )}
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push('/jobs')}
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
             <Sparkles className="w-6 h-6 text-white" />

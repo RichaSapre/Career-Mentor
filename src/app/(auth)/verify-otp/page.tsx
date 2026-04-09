@@ -85,7 +85,7 @@ export default function VerifyOtpPage() {
         tokenStore.set({ accessToken, refreshToken });
         localStorage.removeItem(LOGIN_EMAIL_KEY);
         toast.success("Successfully verified! Redirecting...");
-        router.push("/dashboard");
+        router.push("/jobs");
       } else {
         toast.error("Invalid or expired OTP. Please try again.");
       }

@@ -19,9 +19,8 @@ export function middleware(request: NextRequest) {
     pathname === "/";
 
   // 2. Check for access or refresh tokens in cookies
-  const hasAccessToken = request.cookies.has("cm_access");
-  const hasRefreshToken = request.cookies.has("cm_refresh");
-  const isAuthenticated = hasAccessToken || hasRefreshToken;
+  const hasAccessToken = Boolean(request.cookies.get("cm_access")?.value);
+  const isAuthenticated = hasAccessToken;
 
   // 3. Ensure unauthenticated users are redirected to login/welcome when accessing protected routes
   if (isProtectedPath && !isAuthenticated) {
@@ -30,8 +29,10 @@ export function middleware(request: NextRequest) {
   }
 
   // 4. Ensure authenticated users are redirected to dashboard when accessing auth routes
-  if (isAuthPath && isAuthenticated) {
-    const dashboardUrl = new URL("/dashboard", request.url);
+  // Only force auth pages to /jobs when an access token is present.
+  // This avoids /welcome <-> /jobs loops when only a stale refresh cookie exists.
+  if (isAuthPath && hasAccessToken) {
+    const dashboardUrl = new URL("/jobs", request.url);
     return NextResponse.redirect(dashboardUrl);
   }
 

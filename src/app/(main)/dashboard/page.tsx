@@ -99,15 +99,15 @@ export default function DashboardPage() {
       {/* Personalized Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] tracking-tight italic">
-            Welcome back, {userName}
+          <h1 className="text-3xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] tracking-tight ">
+            Welcome back
           </h1>
-          <p className="text-muted mt-2 flex items-center gap-2 text-lg font-bold italic">
+          <p className="text-muted mt-2 flex items-center gap-2 text-lg font-bold ">
             <SparkleIcon className="w-4 h-4 text-accent-primary" />
             You&apos;re 75% of the way to your ideal {targetRole} role.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm font-black bg-surface border border-border px-5 py-2.5 rounded-full text-heading backdrop-blur-xl shadow-card transition-all italic">
+        <div className="flex items-center gap-2 text-sm font-black bg-surface border border-border px-5 py-2.5 rounded-full text-heading backdrop-blur-xl shadow-card transition-all ">
           <LayoutDashboard className="w-4 h-4" />
           Intelligence Overview
         </div>
@@ -120,18 +120,18 @@ export default function DashboardPage() {
         <GlassCard className="col-span-1 md:col-span-8 lg:col-span-6 row-span-2 group relative overflow-hidden flex flex-col justify-between hover:border-border-hover transition-all duration-500 p-8 shadow-card">
           <div className="flex items-start justify-between z-10">
             <div>
-              <h3 className="text-xl font-black text-heading mb-1 italic">Profile Readiness</h3>
+              <h3 className="text-xl font-black text-heading mb-1 ">Profile Readiness</h3>
               <p className="text-sm text-muted font-medium">Your competitive standing in the current market.</p>
             </div>
-            <div className="px-3 py-1 rounded-full bg-badge-success-bg border border-badge-success-border text-badge-success-text text-xs font-black uppercase tracking-wider flex items-center gap-1.5 italic">
+            <div className="px-3 py-1 rounded-full bg-badge-success-bg border border-badge-success-border text-badge-success-text text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ">
               <CheckCircle2 className="w-3.5 h-3.5" /> High Match
             </div>
           </div>
           
           <div className="flex items-center justify-between mt-auto z-10">
             <div>
-              <div className="text-5xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-[var(--gradient-from)] to-[var(--accent-primary)] mb-2">75%</div>
-              <div className="text-sm font-black text-faint uppercase tracking-widest italic">Completeness</div>
+              <div className="text-5xl font-black  tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-[var(--gradient-from)] to-[var(--accent-primary)] mb-2">75%</div>
+              <div className="text-sm font-black text-faint uppercase tracking-widest ">Completeness</div>
             </div>
             
             <div className="relative w-32 h-32 flex-shrink-0">
@@ -166,7 +166,7 @@ export default function DashboardPage() {
               <ArrowUpRight className="w-4 h-4 text-faint" />
             </div>
             <div>
-              <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Target Role</div>
+              <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 ">Target Role</div>
               <div className="text-xl font-bold text-heading tracking-tight">{mounted ? targetRole : "..."}</div>
             </div>
           </GlassCard>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
               <ArrowUpRight className="w-4 h-4 text-faint" />
             </div>
             <div>
-              <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 italic">Gap Analysis</div>
+              <div className="text-xs font-black uppercase tracking-widest text-faint mb-1 ">Gap Analysis</div>
               <div className="text-xl font-bold text-heading tracking-tight">{gapCount} Missing Skills</div>
             </div>
           </GlassCard>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
         {/* Quick Actions Bento Item */}
         <GlassCard className="col-span-1 md:col-span-8 lg:col-span-6 row-span-1 flex flex-col justify-center p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-faint italic">Quick Tools</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-faint ">Quick Tools</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 h-full">
             {quickActions.map((action, idx) => (
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                     <action.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-black text-heading text-sm transition-colors group-hover:text-accent-primary italic">{action.title}</div>
+                    <div className="font-black text-heading text-sm transition-colors group-hover:text-accent-primary ">{action.title}</div>
                     <div className="text-[10px] text-faint mt-1 line-clamp-1 font-medium">{action.desc}</div>
                   </div>
                 </div>
@@ -217,11 +217,11 @@ export default function DashboardPage() {
         {/* Full Width Recommended Roles */}
         <GlassCard className="col-span-1 md:col-span-12 lg:col-span-12 row-span-2 p-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-black flex items-center gap-2 text-heading italic">
+            <h3 className="text-xl font-black flex items-center gap-2 text-heading ">
               <SparkleIcon className="w-5 h-5 text-accent-primary" />
               AI Trajectory Consensus
             </h3>
-            <button onClick={() => router.push('/jobs')} className="text-sm text-accent-primary hover:opacity-80 font-black flex items-center gap-1 transition-colors italic">
+            <button onClick={() => router.push('/jobs')} className="text-sm text-accent-primary hover:opacity-80 font-black flex items-center gap-1 transition-colors ">
               View All <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -236,21 +236,21 @@ export default function DashboardPage() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="text-xl font-black text-heading group-hover:text-accent-primary transition-colors italic">{role.title}</h4>
-                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-badge-success-bg border border-badge-success-border text-badge-success-text text-[10px] font-black tracking-widest uppercase italic">
+                    <h4 className="text-xl font-black text-heading group-hover:text-accent-primary transition-colors ">{role.title}</h4>
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-badge-success-bg border border-badge-success-border text-badge-success-text text-[10px] font-black tracking-widest uppercase ">
                       <TrendingUp className="w-3 h-3" /> Demand {role.trend}
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-surface-inset border border-border min-w-[70px]">
-                    <div className="text-[10px] uppercase tracking-widest text-faint mb-0.5 font-black italic">FitRatio</div>
-                    <div className="text-2xl font-black italic tracking-tighter text-accent-primary leading-none">
+                    <div className="text-[10px] uppercase tracking-widest text-faint mb-0.5 font-black ">FitRatio</div>
+                    <div className="text-2xl font-black  tracking-tighter text-accent-primary leading-none">
                       {role.fit}%
                     </div>
                   </div>
                 </div>
                 
                 <div className="mt-auto pt-4 border-t border-divider border-dashed">
-                  <div className="text-[10px] font-black text-faint mb-2 uppercase tracking-wider italic">Required Core</div>
+                  <div className="text-[10px] font-black text-faint mb-2 uppercase tracking-wider ">Required Core</div>
                   <div className="flex flex-wrap gap-2">
                     {(role.skills ?? []).map(skill => (
                       <span key={skill} className="px-3 py-1.5 rounded-xl bg-tag-bg border border-tag-border text-tag-text text-xs font-black group-hover:bg-tag-hover-bg group-hover:border-tag-hover-border group-hover:text-tag-hover-text transition-colors shadow-sm">

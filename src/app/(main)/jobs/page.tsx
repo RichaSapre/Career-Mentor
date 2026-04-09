@@ -1,305 +1,909 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { signupDraft } from "@/lib/auth/signupDraft";
-import { useMe } from "@/features/auth/hooks";
-import { apiFetch } from "@/lib/api/client";
-import { API } from "@/lib/api/endpoints";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Search,
-  MapPin,
-  Building2,
-  BrainCircuit,
-  GitCompare,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+
+import { fetchMarketJobs, type JobListing, type JobsQueryFilters } from "@/lib/api/jobs";
+import { MARKET_ROLES } from "@/lib/data/marketRole-handshake";
+import { COMPANIES } from "@/lib/data/companyName-handshake";
+import { cn } from "@/lib/utils";
+import {
   Briefcase,
-  User,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  AlertCircle,
+  Building2,
+  Loader2,
+  MapPin,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 
-type Job = {
-  id: string;
-  title: string;
+type JobsFormState = {
+  search: string;
+  canonicalRole: string;
   company: string;
   location: string;
-  requiredSkills: string[];
+  jobType: string;
+  employmentDuration: string;
+  schedule: string;
+  status: string;
+  isRemote: "any" | "true" | "false";
+  skillsCsv: string;
+  minSalary: string;
+  maxSalary: string;
+  postedAfter: string;
+  postedBefore: string;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
 };
 
-export default function JobsPage() {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+const LIMIT_OPTIONS = [10, 20, 50];
+const JOB_TYPE_OPTIONS = ["job", "internship", "fellowship", "co-op", "apprenticeship"];
+const EMPLOYMENT_DURATION_OPTIONS = ["Permanent", "Temporary or seasonal"];
+const SCHEDULE_OPTIONS = ["Full time", "Part time"];
+const STATUS_OPTIONS = ["Approved", "Pending", "Rejected"];
+const SORT_BY_OPTIONS = ["postedDate", "salaryMax", "salaryMin", "title", "company"];
 
-  const { data: user } = useMe();
-  const userSkills =
-    user?.skills?.map((s) => s.skillName) ??
-    signupDraft.get().skills?.map((s: any) => (typeof s === "string" ? s : s.skill_name ?? s.skillName)) ??
-    [];
+const DEFAULT_FORM: JobsFormState = {
+  search: "",
+  canonicalRole: "",
+  company: "",
+  location: "",
+  jobType: "",
+  employmentDuration: "",
+  schedule: "",
+  status: "",
+  isRemote: "any",
+  skillsCsv: "",
+  minSalary: "",
+  maxSalary: "",
+  postedAfter: "",
+  postedBefore: "",
+  sortBy: "postedDate",
+  sortOrder: "desc",
+};
+
+function splitCsv(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseDateInputToIso(value: string): string | undefined {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString();
+}
+
+function formatPostedDate(value?: string): string {
+  if (!value) return "Date not available";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString();
+}
+
+function formatCompensationRange(minSalary?: number, maxSalary?: number, salaryPeriod?: string): string {
+  if (typeof minSalary !== "number" && typeof maxSalary !== "number") {
+    return "Salary not disclosed";
+  }
+
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+
+  const min = typeof minSalary === "number" ? formatter.format(minSalary) : undefined;
+  const max = typeof maxSalary === "number" ? formatter.format(maxSalary) : undefined;
+  const range = min && max ? `${min} - ${max}` : min ?? max ?? "Salary not disclosed";
+
+  if (!salaryPeriod) return range;
+  return `${range} / ${salaryPeriod}`;
+}
+
+type SuggestionInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  options: readonly string[];
+  limit?: number;
+};
+
+function SuggestionInput({ value, onChange, placeholder, options, limit = 200 }: SuggestionInputProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filteredOptions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options.slice(0, limit);
+    return options.filter((option) => option.toLowerCase().includes(q)).slice(0, limit);
+  }, [limit, options, query]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = (await apiFetch(API.recommendedRoles, { method: "GET", auth: true })) as any;
-        if (cancelled) return;
-        const rawList = Array.isArray(r) ? r : r?.data ?? [];
-        const mapped: Job[] = ((rawList ?? []) as any[]).map((x: any, idx: number): Job => ({
-          id: x.roleId ?? x.role_id ?? `role-${idx}`,
-          title: x.roleTitle ?? x.role_title ?? "",
-          company: "Market Opportunity",
-          location: (x.topLocations ?? x.top_locations ?? ["Remote"])[0] ?? "Remote",
-          requiredSkills: x.topRequiredSkills ?? x.top_required_skills ?? x.missingSkills ?? x.missing_skills ?? [],
-        })).filter((j) => !!j.title);
-        if (cancelled) return;
-        setJobs(mapped);
-      } catch {
-        setJobs([]);
-      } finally {
-        if (!cancelled) setLoading(false);
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
       }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(query.toLowerCase()) ||
-      job.company.toLowerCase().includes(query.toLowerCase()) ||
-      job.location.toLowerCase().includes(query.toLowerCase())
-  );
+  function handleSelect(option: string) {
+    if (value === option) {
+      onChange("");
+    } else {
+      onChange(option);
+    }
+    setOpen(false);
+    setQuery("");
+  }
 
-  function calculateFit(job: Job) {
-    const matched = job.requiredSkills.filter((skill) =>
-      userSkills.includes(skill)
-    );
-
-    const fitScore = Math.round(
-      (matched.length / job.requiredSkills.length) * 100
-    );
-
-    const missing = job.requiredSkills.filter(
-      (skill) => !userSkills.includes(skill)
-    );
-
-    return { fitScore, missing, matched };
+  function clearSelection(e: React.MouseEvent) {
+    e.stopPropagation();
+    onChange("");
   }
 
   return (
-    <div className="w-full flex flex-col gap-10 pb-16">
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "w-full justify-between font-normal",
+          !value && "text-muted-foreground"
+        )}
+      >
+        <span className="truncate text-left">{value || placeholder}</span>
+        <div className="flex items-center ml-2 shrink-0 opacity-50">
+          {value && (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={clearSelection}
+              className="mr-1 hover:opacity-100 hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </div>
+          )}
+          <ChevronsUpDown className="h-4 w-4" />
+        </div>
+      </button>
+      {open && (
+        <div
+          className="absolute left-0 top-full z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-lg shadow-black/5 ring-1 ring-foreground/[0.06] backdrop-blur-xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-150"
+        >
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+              value={query}
+              onValueChange={setQuery}
+              autoFocus
+            />
+            <CommandList className="max-h-56 overflow-y-auto">
+              {filteredOptions.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No results found.
+                </div>
+              ) : (
+                <CommandGroup>
+                  {filteredOptions.map((option) => {
+                    const isSelected = value === option;
+                    return (
+                      <CommandItem
+                        key={option}
+                        value={option}
+                        onSelect={() => handleSelect(option)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            isSelected ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <span className="truncate">{option}</span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Header Section */}
+export default function JobsPage() {
+  const router = useRouter();
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [form, setForm] = useState<JobsFormState>(DEFAULT_FORM);
+  const [filters, setFilters] = useState<JobsQueryFilters>({
+    page: 1,
+    limit: 20,
+    sortBy: "postedDate",
+    sortOrder: "desc",
+  });
+  const [jobs, setJobs] = useState<JobListing[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetchMarketJobs(filters, { signal: controller.signal });
+        if (cancelled) return;
+        setJobs(response.jobs);
+        setTotal(response.pagination.total);
+        setTotalPages(Math.max(1, response.pagination.totalPages));
+      } catch (fetchError) {
+        if (cancelled) return;
+        setJobs([]);
+        setTotal(0);
+        setTotalPages(1);
+
+        const isAbort = fetchError instanceof DOMException && fetchError.name === "AbortError";
+        setError(
+          isAbort
+            ? "Request timed out while loading jobs. Please try again."
+            : fetchError instanceof Error
+              ? fetchError.message
+              : "Failed to load jobs."
+        );
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [filters]);
+
+  const currentPage = filters.page ?? 1;
+  const limit = filters.limit ?? 20;
+
+  const canPrev = currentPage > 1;
+  const canNext = currentPage < totalPages;
+
+  const updateForm = useCallback(<K extends keyof JobsFormState>(key: K, value: JobsFormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const applyFilters = useCallback(() => {
+    const minSalary = form.minSalary.trim() ? Number(form.minSalary.trim()) : undefined;
+    const maxSalary = form.maxSalary.trim() ? Number(form.maxSalary.trim()) : undefined;
+
+    setFilters((prev) => ({
+      page: 1,
+      limit: prev.limit ?? 20,
+      search: form.search.trim() || undefined,
+      canonicalRole: form.canonicalRole?.trim() || undefined,
+      company: form.company?.trim() || undefined,
+      location: form.location.trim() || undefined,
+      jobType: form.jobType.trim() || undefined,
+      employmentDuration: form.employmentDuration.trim() || undefined,
+      schedule: form.schedule.trim() || undefined,
+      status: form.status.trim() || undefined,
+      isRemote:
+        form.isRemote === "any"
+          ? undefined
+          : form.isRemote === "true"
+            ? true
+            : false,
+      skills: splitCsv(form.skillsCsv),
+      minSalary:
+        typeof minSalary === "number" && Number.isFinite(minSalary)
+          ? minSalary
+          : undefined,
+      maxSalary:
+        typeof maxSalary === "number" && Number.isFinite(maxSalary)
+          ? maxSalary
+          : undefined,
+      postedAfter: parseDateInputToIso(form.postedAfter),
+      postedBefore: parseDateInputToIso(form.postedBefore),
+      sortBy: form.sortBy || "postedDate",
+      sortOrder: form.sortOrder,
+    }));
+  }, [form]);
+
+  const clearFilters = useCallback(() => {
+    setForm(DEFAULT_FORM);
+    setFilters({ page: 1, limit, sortBy: "postedDate", sortOrder: "desc" });
+  }, [limit]);
+
+  const resultSummary = useMemo(() => {
+    if (total === 0) return "No results";
+    const start = (currentPage - 1) * limit + 1;
+    const end = Math.min(currentPage * limit, total);
+    return `${start}-${end} of ${total}`;
+  }, [currentPage, limit, total]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (form.search.trim()) count += 1;
+    if (form.canonicalRole.trim()) count += 1;
+    if (form.company.trim()) count += 1;
+    if (form.location.trim()) count += 1;
+    if (form.jobType.trim()) count += 1;
+    if (form.employmentDuration.trim()) count += 1;
+    if (form.schedule.trim()) count += 1;
+    if (form.status.trim()) count += 1;
+    if (form.isRemote !== "any") count += 1;
+    if (form.skillsCsv.trim()) count += 1;
+    if (form.minSalary.trim()) count += 1;
+    if (form.maxSalary.trim()) count += 1;
+    if (form.postedAfter.trim()) count += 1;
+    if (form.postedBefore.trim()) count += 1;
+    if (form.sortBy !== "postedDate") count += 1;
+    if (form.sortOrder !== "desc") count += 1;
+    return count;
+  }, [form]);
+
+  function handlePageChange(nextPage: number) {
+    setFilters((prev) => ({ ...prev, page: nextPage }));
+  }
+
+  function handleLimitChange(nextLimit: number) {
+    setFilters((prev) => ({ ...prev, page: 1, limit: nextLimit }));
+  }
+
+  return (
+    <div className="w-full flex flex-col gap-8 pb-16">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-sm font-black mb-4 italic">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-sm font-black mb-4">
             <Briefcase className="w-4 h-4" />
-            <span>Opportunity Board</span>
+            <span>Market Jobs</span>
           </div>
-          <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] italic">
-            Find Your Next Role
+          <h1 className="text-3xl md:text-4xl font-black text-heading leading-tight">
+            Discover Roles That Actually Match Your Criteria
           </h1>
-          <p className="text-muted mt-2 text-lg italic font-medium">
-            Matches are personalized based on your skill profile.
+          <p className="text-muted mt-2 text-base md:text-lg max-w-3xl">
+            Query the listings API with role, company, duration, schedule, salary band, and posting window filters.
           </p>
         </div>
-      </div>
 
-      {/* 🔎 Search Bar */}
-      <div className="relative group max-w-2xl">
-        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-          <Search className="h-6 w-6 text-faint group-focus-within:text-accent-primary transition-colors" />
+        <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-surface-inset text-sm text-muted">
+          <Sparkles className="w-4 h-4 text-accent-primary" />
+          <span className="font-semibold">{activeFilterCount}</span>
+          <span>active filters</span>
         </div>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by role or company..."
-          className="w-full pl-14 pr-6 py-4 rounded-2xl bg-input-bg border border-input-border focus:border-accent-primary focus:bg-surface-hover focus:outline-none focus:ring-4 focus:ring-input-focus-ring text-lg transition-all shadow-card backdrop-blur-md placeholder:text-input-placeholder text-input-text"
-        />
       </div>
 
-      {/* Job Results */}
+      <GlassCard className="space-y-5">
+        <div className="grid grid-cols-1 xl:grid-cols-[2.2fr_1fr_1fr_auto] gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              value={form.search}
+              onChange={(e) => updateForm("search", e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyFilters();
+              }}
+              className="pl-9"
+              placeholder="Search title, company, keywords"
+            />
+          </div>
+
+          <SuggestionInput
+            value={form.canonicalRole}
+            onChange={(next) => updateForm("canonicalRole", next)}
+            placeholder="Canonical role"
+            options={MARKET_ROLES}
+            limit={1000}
+          />
+
+          <SuggestionInput
+            value={form.company}
+            onChange={(next) => updateForm("company", next)}
+            placeholder="Company"
+            options={COMPANIES}
+            limit={300}
+          />
+
+          <Button onClick={applyFilters} className="px-6">
+            Search
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Job Type</p>
+            <Select
+              value={form.jobType || "any"}
+              onValueChange={(value) => updateForm("jobType", value === "any" ? "" : value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                {JOB_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Duration</p>
+            <Select
+              value={form.employmentDuration || "any"}
+              onValueChange={(value) => updateForm("employmentDuration", value === "any" ? "" : value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                {EMPLOYMENT_DURATION_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Schedule</p>
+            <Select
+              value={form.schedule || "any"}
+              onValueChange={(value) => updateForm("schedule", value === "any" ? "" : value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                {SCHEDULE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Status</p>
+            <Select
+              value={form.status || "any"}
+              onValueChange={(value) => updateForm("status", value === "any" ? "" : value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Remote</p>
+            <Select value={form.isRemote} onValueChange={(value: "any" | "true" | "false") => updateForm("isRemote", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="true">Remote only</SelectItem>
+                <SelectItem value="false">On-site / hybrid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowAdvancedFilters((prev) => !prev)}
+              className="gap-2"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              {showAdvancedFilters ? "Hide" : "Show"} Advanced Filters
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "gap-2"
+                )}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+                Filter Actions
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Filters</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setShowAdvancedFilters((prev) => !prev);
+                  }}
+                >
+                  {showAdvancedFilters ? "Hide" : "Show"} advanced filters
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    applyFilters();
+                  }}
+                >
+                  Apply filters
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    clearFilters();
+                  }}
+                  disabled={activeFilterCount === 0}
+                >
+                  Clear all filters
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="text-xs md:text-sm text-muted">
+            Tip: press Enter in search to run filters quickly.
+          </div>
+        </div>
+
+        {showAdvancedFilters && (
+          <div className="pt-4 border-t border-border grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 animate-in fade-in duration-200">
+            <Input
+              value={form.location}
+              onChange={(e) => updateForm("location", e.target.value)}
+              placeholder="Primary location"
+            />
+            <Input
+              value={form.skillsCsv}
+              onChange={(e) => updateForm("skillsCsv", e.target.value)}
+              placeholder="Skills CSV"
+            />
+            <Input
+              type="number"
+              min={0}
+              value={form.minSalary}
+              onChange={(e) => updateForm("minSalary", e.target.value)}
+              placeholder="Min salary"
+            />
+            <Input
+              type="number"
+              min={0}
+              value={form.maxSalary}
+              onChange={(e) => updateForm("maxSalary", e.target.value)}
+              placeholder="Max salary"
+            />
+
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Sort By</p>
+              <Select
+                value={form.sortBy}
+                onValueChange={(value) => updateForm("sortBy", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_BY_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black mb-1.5">Sort Order</p>
+              <Select value={form.sortOrder} onValueChange={(value: "asc" | "desc") => updateForm("sortOrder", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">desc</SelectItem>
+                  <SelectItem value="asc">asc</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Input
+              type="datetime-local"
+              value={form.postedAfter}
+              onChange={(e) => updateForm("postedAfter", e.target.value)}
+              placeholder="Posted after"
+            />
+            <Input
+              type="datetime-local"
+              value={form.postedBefore}
+              onChange={(e) => updateForm("postedBefore", e.target.value)}
+              placeholder="Posted before"
+            />
+
+            <div className="md:col-span-2 xl:col-span-4 flex justify-end">
+              <Button onClick={applyFilters} className="px-6">
+                Apply Advanced Filters
+              </Button>
+            </div>
+          </div>
+        )}
+      </GlassCard>
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="text-sm text-muted font-medium">
+          Showing <span className="text-heading font-bold">{resultSummary}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted">Rows</span>
+          <Select
+            value={String(limit)}
+            onValueChange={(value) => handleLimitChange(Number(value))}
+          >
+            <SelectTrigger className="w-[88px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LIMIT_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6">
         {loading && (
           <div className="text-center py-20 text-muted border border-border rounded-[2.5rem] bg-surface">
-            <div className="animate-pulse text-lg font-black italic">Loading opportunities...</div>
+            <div className="inline-flex items-center gap-2 animate-pulse text-lg font-black ">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Loading opportunities...
+            </div>
           </div>
         )}
-        {!loading && filteredJobs.length === 0 && (
-          <div className="text-center py-20 text-muted border border-border rounded-[2.5rem] bg-surface">
+
+        {!loading && error && (
+          <div className="text-center py-16 text-red-400 border border-red-900/40 rounded-[2.5rem] bg-surface space-y-2">
+            <AlertCircle className="w-10 h-10 mx-auto" />
+            <p className="text-base font-black ">Failed to fetch jobs</p>
+            <p className="text-sm text-muted">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && jobs.length === 0 && (
+          <div className="text-center py-16 text-muted border border-border rounded-3xl bg-surface">
             <Search className="w-12 h-12 mx-auto mb-4 opacity-10" />
-            <p className="text-lg italic font-black">No opportunities found. Complete your profile for personalized role recommendations.</p>
+            <p className="text-lg font-bold">No opportunities matched your filters.</p>
             <button
-              onClick={() => router.push("/profile")}
-              className="mt-4 px-6 py-3 rounded-xl bg-btn-primary-bg text-btn-primary-text font-bold hover:bg-btn-primary-hover transition-all"
+              onClick={clearFilters}
+              className="mt-4 px-6 py-2.5 rounded-xl bg-btn-primary-bg text-btn-primary-text font-semibold hover:bg-btn-primary-hover transition-all"
             >
-              Go to Profile
+              Reset filters
             </button>
           </div>
         )}
 
-        {filteredJobs.map((job) => {
-          const { fitScore, missing, matched } = calculateFit(job);
+        {!loading && !error && jobs.map((job) => (
+          <GlassCard
+            key={job.id}
+            className="group border border-border/70 hover:bg-surface-hover hover:border-border-hover transition-all duration-300"
+          >
+            <div className="flex flex-col lg:flex-row justify-between gap-6">
+              <div className="flex-1 space-y-3.5">
+                <h2 className="text-xl md:text-2xl font-black text-heading group-hover:text-accent-primary transition-colors">
+                  {job.title}
+                </h2>
 
-          return (
-            <GlassCard 
-              key={job.id} 
-              className="group hover:bg-surface-hover hover:border-border-hover transition-all duration-300 hover:shadow-elevated"
-            >
-              <div className="flex flex-col lg:flex-row justify-between gap-8">
-                
-                {/* Left Side: Info */}
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-2xl font-black text-heading group-hover:text-accent-primary transition-colors italic">
-                        {job.title}
-                      </h2>
-                      <div className="flex flex-wrap items-center gap-4 mt-3 text-muted text-sm font-bold italic">
-                        <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border shadow-sm">
-                          <Building2 className="w-4 h-4 text-faint" />
-                          {job.company}
-                        </span>
-                        <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border shadow-sm">
-                          <MapPin className="w-4 h-4 text-faint" />
-                          {job.location}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Mobile Fit Score Badge */}
-                    <div className="lg:hidden flex flex-col items-end">
-                      <div className="text-2xl font-black italic text-faint group-hover:text-accent-primary transition-colors">
-                        {fitScore}%
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-faint font-black italic">Fit</span>
-                    </div>
-                  </div>
-
-                  {/* Skills Assessment */}
-                  <div className="mt-8 space-y-3">
-                    <p className="text-faint text-[10px] font-black uppercase tracking-[0.2em] italic">Skills Assessment</p>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {matched.map((skill) => (
-                        <span key={skill} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-badge-success-bg border border-badge-success-border text-badge-success-text text-xs font-black shadow-sm">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          {skill}
-                        </span>
-                      ))}
-                      
-                      {missing.map((skill) => (
-                        <span key={skill} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-badge-info-bg border border-badge-info-border text-badge-info-text text-xs font-black shadow-sm">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex flex-wrap items-center gap-2.5 text-sm font-semibold text-muted">
+                  <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
+                    <Building2 className="w-4 h-4 text-faint" />
+                    {job.company}
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
+                    <MapPin className="w-4 h-4 text-faint" />
+                    {job.location}
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
+                    <Briefcase className="w-4 h-4 text-faint" />
+                    {job.jobType || "N/A"}
+                  </span>
+                  {job.schedule && (
+                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                      {job.schedule}
+                    </span>
+                  )}
+                  {job.employmentDuration && (
+                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                      {job.employmentDuration}
+                    </span>
+                  )}
+                  {job.status && (
+                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                      {job.status}
+                    </span>
+                  )}
+                  {job.locationType && (
+                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                      {job.locationType}
+                    </span>
+                  )}
                 </div>
 
-                {/* Right Side: Desktop Fit Score & Actions */}
-                <div className="flex flex-col items-start lg:items-end justify-between border-t lg:border-t-0 lg:border-l border-divider pt-6 lg:pt-0 lg:pl-8 gap-6 min-w-[220px]">
-                  
-                  {/* Desktop Fit Score */}
-                  <div className="hidden lg:flex flex-col items-end w-full">
-                    <div className="flex items-center gap-2 text-faint mb-1">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="text-[10px] uppercase tracking-widest font-black italic">Match Accuracy</span>
-                    </div>
-                    <div className="text-5xl font-black italic tracking-tighter text-faint group-hover:text-accent-secondary transition-colors duration-500">
-                      {fitScore}%
-                    </div>
-                  </div>
+                {job.description && (
+                  <p className="text-sm text-muted leading-relaxed">
+                    {job.description.replace(/\s*\|\s*/g, " ").slice(0, 240)}
+                    {job.description.length > 240 ? "..." : ""}
+                  </p>
+                )}
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full">
-                    <button
-                      onClick={() => setSelectedJob(job)}
-                      className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-btn-secondary-bg hover:bg-btn-secondary-hover border border-btn-secondary-border transition-all font-black text-sm text-btn-secondary-text shadow-sm"
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(job.skills || []).slice(0, 10).map((skill) => (
+                    <span
+                      key={skill}
+                      className="inline-flex items-center px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-xs font-semibold"
                     >
-                      <GitCompare className="w-4 h-4" />
-                      Deep Analysis
-                    </button>
-
-                    <button
-                      onClick={() => router.push(`/market-analyzer?role=${job.title}` as any)}
-                      className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-btn-primary-bg text-btn-primary-text hover:bg-btn-primary-hover transition-all font-bold text-sm shadow-glow-primary hover:shadow-[0_0_30px_var(--btn-primary-hover)] active:scale-95"
-                    >
-                      <BrainCircuit className="w-4 h-4" />
-                      Run Debate
-                    </button>
-                  </div>
+                      {skill}
+                    </span>
+                  ))}
+                  {(job.skills || []).length === 0 && (
+                    <span className="text-sm text-muted">No skills listed</span>
+                  )}
                 </div>
-
               </div>
-            </GlassCard>
-          );
-        })}
+
+              <div className="lg:min-w-[260px] space-y-3 lg:pl-6 lg:border-l lg:border-border">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Posted</p>
+                  <p className="text-sm font-semibold text-heading mt-1">{formatPostedDate(job.postedDate)}</p>
+                </div>
+
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Compensation</p>
+                  <p className="text-sm font-semibold text-heading mt-1">
+                    {formatCompensationRange(job.salaryMin, job.maxSalary, job.salaryPeriod)}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Status</p>
+                  <p className="text-sm font-semibold text-heading mt-1">{job.status || "Unknown"}</p>
+                </div>
+
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Remote</p>
+                  <p className="text-sm font-semibold text-heading mt-1">
+                  {typeof job.isRemote === "boolean" ? (job.isRemote ? "Yes" : "No") : "Unknown"}
+                  </p>
+                </div>
+
+                {job.jobUrl && (
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(job.jobUrl, "_blank", "noopener,noreferrer")}
+                    className="w-full mt-1"
+                  >
+                    View Listing
+                  </Button>
+                )}
+
+                <Button
+                  onClick={() =>
+                    router.push(
+                      `/market-analyzer?role=${encodeURIComponent(
+                        job.canonicalRole || job.groupedRole || job.title
+                      )}` as any
+                    )
+                  }
+                  className="w-full mt-1"
+                >
+                  Analyze This Role
+                </Button>
+              </div>
+            </div>
+          </GlassCard>
+        ))}
       </div>
 
-      {/* Selected Job Analysis Modal */}
-      {selectedJob && (() => {
-        const { matched, missing } = calculateFit(selectedJob);
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedJob(null)}>
-            <GlassCard className="w-full max-w-2xl bg-surface shadow-elevated overflow-hidden" onClick={e => e.stopPropagation()}>
-              <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/[0.02] to-transparent pointer-events-none" />
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-[10px] font-black uppercase tracking-[0.2em] mb-6 italic">
-                  <BrainCircuit className="w-3.5 h-3.5" />
-                  AI Consensus Preview
-                </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 border border-border rounded-2xl px-4 py-3 bg-surface">
+        <div className="text-sm text-muted">
+          Page <span className="text-heading font-bold">{currentPage}</span> of <span className="text-heading font-bold">{totalPages}</span>
+        </div>
 
-                <h2 className="text-3xl font-black text-heading tracking-tight italic">
-                  {selectedJob.title}
-                </h2>
-                <p className="text-muted mt-1 font-medium">{selectedJob.company} • {selectedJob.location}</p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={!canPrev || loading}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Prev
+          </Button>
 
-                <div className="mt-8 space-y-4">
-                  <div className="p-5 rounded-2xl bg-surface-inset border border-border flex gap-4 items-start shadow-sm">
-                    <div className="p-2 rounded-xl bg-badge-info-bg text-badge-info-text mt-1">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-heading italic">Market Agent</h4>
-                      <p className="text-muted text-sm mt-1 leading-relaxed font-medium">High demand detected for {selectedJob.title} in {selectedJob.location}. High saturation of applicants but your specific skill stack remains rare.</p>
-                    </div>
-                  </div>
-
-                  <div className="p-5 rounded-2xl bg-surface-inset border border-border flex gap-4 items-start shadow-sm">
-                    <div className="p-2 rounded-xl bg-badge-success-bg text-badge-success-text mt-1">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-heading italic">Profile Agent</h4>
-                      <p className="text-muted text-sm mt-1 leading-relaxed font-medium">Your foundation in {matched.slice(0,2).join(", ")} is 1:1 with market needs. {missing.length > 0 ? `Consider learning ${missing[0]} to lock this role down.` : 'You are a perfect fit.'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-10 flex gap-3">
-                  <button 
-                    onClick={() => setSelectedJob(null)}
-                    className="flex-1 px-6 py-4 rounded-xl bg-btn-secondary-bg hover:bg-btn-secondary-hover font-bold transition-all text-btn-secondary-text border border-btn-secondary-border"
-                  >
-                    Dismiss
-                  </button>
-                  <button 
-                    onClick={() => router.push(`/market-analyzer?role=${selectedJob.title}` as any)}
-                    className="flex-[2] px-6 py-4 rounded-xl bg-btn-primary-bg text-btn-primary-text font-bold hover:bg-btn-primary-hover transition-all shadow-glow-primary hover:shadow-[0_0_30px_var(--btn-primary-hover)]"
-                  >
-                    Initialize Full Analysis
-                  </button>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
-        );
-      })()}
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!canNext || loading}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

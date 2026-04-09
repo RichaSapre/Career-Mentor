@@ -55,11 +55,11 @@ export default function CareerPlanPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Initialize selected roles from user profile once
-  useEffect(() => {
-    if (user?.targetRoles?.length && selectedRoles.length === 0) {
-      setSelectedRoles(user.targetRoles);
-    }
-  }, [user]);
+  // useEffect(() => {
+  //   if (user?.targetRoles?.length && selectedRoles.length === 0) {
+  //     setSelectedRoles(user.targetRoles);
+  //   }
+  // }, [user]);
 
   const filteredRoles = useMemo(() => {
     if (!query) return [...MARKET_ROLES].slice(0, 30);
@@ -79,7 +79,7 @@ export default function CareerPlanPage() {
 
   function toggleRole(role: string) {
     if (selectedRoles.includes(role)) {
-      setSelectedRoles(selectedRoles.filter((r) => r !== role));
+      setSelectedRoles([]);
     } else {
       setSelectedRoles([role]); // Only allow 1 role
     }
@@ -153,66 +153,77 @@ export default function CareerPlanPage() {
           <div className="flex flex-col gap-4 max-w-2xl">
             <div className="relative flex-1" ref={containerRef}>
               <div 
-                className="min-h-12 rounded-xl bg-input-bg border border-input-border flex flex-wrap items-center gap-2 p-2 cursor-text"
+                className="min-h-12 rounded-xl bg-input-bg border border-input-border flex items-center gap-2 p-1.5 cursor-pointer transition-all hover:border-input-focus-ring/50 focus-within:ring-2 focus-within:ring-input-focus-ring focus-within:border-transparent"
                 onClick={() => {
-                  setOpen(true);
-                  inputRef.current?.focus();
+                  if (selectedRoles.length === 0) {
+                    setOpen(true);
+                    inputRef.current?.focus();
+                  }
                 }}
               >
-                {selectedRoles.map((r) => (
-                  <span key={r} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-inset border border-border text-sm text-heading font-medium">
-                    {r}
+                {selectedRoles.length > 0 ? (
+                  <div className="flex-1 flex items-center justify-between px-3 py-1.5 animate-in fade-in zoom-in-95 duration-200">
+                    <span className="text-sm font-semibold text-heading">{selectedRoles[0]}</span>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleRole(r);
+                        setSelectedRoles([]);
+                        setQuery("");
+                        setTimeout(() => {
+                          setOpen(true);
+                          inputRef.current?.focus();
+                        }, 10);
                       }}
-                      className="text-muted hover:text-red-500 transition-colors"
+                      className="p-1 rounded-md hover:bg-surface-hover text-muted hover:text-red-500 transition-colors"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </button>
-                  </span>
-                ))}
-                <div className="flex-1 flex items-center min-w-[200px]">
-                  <Search className="w-4 h-4 text-muted mr-2 shrink-0" />
-                  <input
-                    ref={inputRef}
-                    placeholder={selectedRoles.length === 0 ? "Search a role..." : "Add another role..."}
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setOpen(true);
-                    }}
-                    onFocus={() => setOpen(true)}
-                    className="flex-1 bg-transparent px-1 min-w-[120px] text-sm text-input-text placeholder:text-input-placeholder focus:outline-none"
-                    disabled={selectedRoles.length >= 1}
-                  />
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center px-3">
+                    <Search className="w-4 h-4 text-muted mr-3 shrink-0" />
+                    <input
+                      ref={inputRef}
+                      placeholder="Search a target role (e.g. Product Manager)"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value);
+                        setOpen(true);
+                      }}
+                      onFocus={() => setOpen(true)}
+                      className="flex-1 bg-transparent text-sm text-input-text placeholder:text-input-placeholder focus:outline-none h-9"
+                    />
+                  </div>
+                )}
+                <div className="pr-3">
+                  <ChevronsUpDown className="w-4 h-4 text-muted opacity-50" />
                 </div>
-                <ChevronsUpDown className="w-4 h-4 text-muted shrink-0 mr-2" />
               </div>
 
-              {open && selectedRoles.length < 1 && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg backdrop-blur-xl custom-scrollbar py-2">
+              {open && selectedRoles.length === 0 && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-border bg-popover shadow-xl shadow-black/5 ring-1 ring-black/5 backdrop-blur-xl custom-scrollbar py-1 animate-in fade-in zoom-in-95 duration-100">
                   {filteredRoles.length > 0 ? (
                     filteredRoles.map((role) => (
                       <button
                         type="button"
                         key={role}
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => toggleRole(role)}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-hover transition-colors flex items-center gap-2 ${
-                          selectedRoles.includes(role) ? "text-accent-primary font-medium bg-accent-primary/5" : "text-body"
-                        }`}
+                        onClick={() => {
+                          setSelectedRoles([role]);
+                          setQuery("");
+                          setOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-surface-hover hover:text-accent-primary transition-colors flex items-center justify-between group border-b border-border/40 last:border-0"
                       >
-                        <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                          {selectedRoles.includes(role) && <Check className="w-4 h-4 text-accent-primary" />}
-                        </div>
-                        {role}
+                        <span className="group-hover:translate-x-0.5 transition-transform font-medium text-body group-hover:text-heading">{role}</span>
                       </button>
                     ))
                   ) : (
-                    <div className="px-5 py-4 text-sm text-muted text-center">No roles found</div>
+                    <div className="px-5 py-8 text-sm text-muted text-center flex flex-col items-center gap-2">
+                      <Search className="w-8 h-8 text-border mb-1" />
+                      <p>No roles found matching &quot;{query}&quot;</p>
+                    </div>
                   )}
                 </div>
               )}
