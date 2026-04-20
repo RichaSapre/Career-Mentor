@@ -649,7 +649,7 @@ function MarketAnalyzerContent() {
                             {r.roleTitle}
                           </div>
                           {r.explanation && (
-                            <p className="mt-2 text-sm text-muted line-clamp-2">
+                            <p className="mt-2 text-sm text-muted leading-relaxed">
                               {r.explanation}
                             </p>
                           )}

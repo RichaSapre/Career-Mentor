@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +73,7 @@ const EMPLOYMENT_DURATION_OPTIONS = ["Permanent", "Temporary or seasonal"];
 const SCHEDULE_OPTIONS = ["Full time", "Part time"];
 const STATUS_OPTIONS = ["Approved", "Pending", "Rejected"];
 const SORT_BY_OPTIONS = ["postedDate", "salaryMax", "salaryMin", "title", "company"];
+const DESCRIPTION_PREVIEW_LIMIT = 280;
 
 const DEFAULT_FORM: JobsFormState = {
   search: "",
@@ -132,6 +132,10 @@ function formatCompensationRange(minSalary?: number, maxSalary?: number, salaryP
 
   if (!salaryPeriod) return range;
   return `${range} / ${salaryPeriod}`;
+}
+
+function normalizePreviewText(value: string): string {
+  return value.replace(/\s*\|\s*/g, " ").replace(/\s+/g, " ").trim();
 }
 
 type SuggestionInputProps = {
@@ -264,7 +268,6 @@ function SuggestionInput({ value, onChange, placeholder, options, limit = 200 }:
 }
 
 export default function JobsPage() {
-  const router = useRouter();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [form, setForm] = useState<JobsFormState>(DEFAULT_FORM);
   const [filters, setFilters] = useState<JobsQueryFilters>({
@@ -278,6 +281,7 @@ export default function JobsPage() {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -758,125 +762,134 @@ export default function JobsPage() {
           </div>
         )}
 
-        {!loading && !error && jobs.map((job) => (
-          <GlassCard
-            key={job.id}
-            className="group border border-border/70 hover:bg-surface-hover hover:border-border-hover transition-all duration-300"
-          >
-            <div className="flex flex-col lg:flex-row justify-between gap-6">
-              <div className="flex-1 space-y-3.5">
-                <h2 className="text-xl md:text-2xl font-black text-heading group-hover:text-accent-primary transition-colors">
-                  {job.title}
-                </h2>
+        {!loading && !error && jobs.map((job) => {
+          const normalizedDescription = job.description ? normalizePreviewText(job.description) : "";
+          const hasLongDescription = normalizedDescription.length > DESCRIPTION_PREVIEW_LIMIT;
+          const isExpanded = !!expandedDescriptions[job.id];
+          const descriptionText = hasLongDescription && !isExpanded
+            ? `${normalizedDescription.slice(0, DESCRIPTION_PREVIEW_LIMIT).trimEnd()}...`
+            : normalizedDescription;
 
-                <div className="flex flex-wrap items-center gap-2.5 text-sm font-semibold text-muted">
-                  <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
-                    <Building2 className="w-4 h-4 text-faint" />
-                    {job.company}
-                  </span>
-                  <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
-                    <MapPin className="w-4 h-4 text-faint" />
-                    {job.location}
-                  </span>
-                  <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
-                    <Briefcase className="w-4 h-4 text-faint" />
-                    {job.jobType || "N/A"}
-                  </span>
-                  {job.schedule && (
-                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
-                      {job.schedule}
+          return (
+            <GlassCard
+              key={job.id}
+              className="group border border-border/70 hover:bg-surface-hover hover:border-border-hover transition-all duration-300"
+            >
+              <div className="flex flex-col lg:flex-row justify-between gap-6">
+                <div className="flex-1 space-y-3.5">
+                  <h2 className="text-xl md:text-2xl font-black text-heading group-hover:text-accent-primary transition-colors">
+                    {job.title}
+                  </h2>
+
+                  <div className="flex flex-wrap items-center gap-2.5 text-sm font-semibold text-muted">
+                    <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
+                      <Building2 className="w-4 h-4 text-faint" />
+                      {job.company}
                     </span>
-                  )}
-                  {job.employmentDuration && (
-                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
-                      {job.employmentDuration}
+                    <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
+                      <MapPin className="w-4 h-4 text-faint" />
+                      {job.location}
                     </span>
-                  )}
-                  {job.status && (
-                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
-                      {job.status}
+                    <span className="flex items-center gap-1.5 bg-surface-inset px-3 py-1.5 rounded-lg border border-border">
+                      <Briefcase className="w-4 h-4 text-faint" />
+                      {job.jobType || "N/A"}
                     </span>
+                    {job.schedule && (
+                      <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                        {job.schedule}
+                      </span>
+                    )}
+                    {job.employmentDuration && (
+                      <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                        {job.employmentDuration}
+                      </span>
+                    )}
+                    {job.status && (
+                      <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                        {job.status}
+                      </span>
+                    )}
+                    {job.locationType && (
+                      <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
+                        {job.locationType}
+                      </span>
+                    )}
+                  </div>
+
+                  {normalizedDescription && (
+                    <div className="space-y-1.5">
+                      <p className="text-sm text-muted leading-relaxed">{descriptionText}</p>
+                      {hasLongDescription && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedDescriptions((prev) => ({
+                              ...prev,
+                              [job.id]: !prev[job.id],
+                            }))
+                          }
+                          className="text-xs font-semibold text-accent-primary hover:underline"
+                        >
+                          {isExpanded ? "Show less" : "Read more"}
+                        </button>
+                      )}
+                    </div>
                   )}
-                  {job.locationType && (
-                    <span className="px-3 py-1.5 rounded-lg border border-border bg-surface-inset">
-                      {job.locationType}
-                    </span>
-                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {(job.skills || []).slice(0, 10).map((skill) => (
+                      <span
+                        key={skill}
+                        className="inline-flex items-center px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-xs font-semibold"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                    {(job.skills || []).length === 0 && (
+                      <span className="text-sm text-muted">No skills listed</span>
+                    )}
+                  </div>
                 </div>
 
-                {job.description && (
-                  <p className="text-sm text-muted leading-relaxed">
-                    {job.description.replace(/\s*\|\s*/g, " ").slice(0, 240)}
-                    {job.description.length > 240 ? "..." : ""}
-                  </p>
-                )}
+                <div className="lg:min-w-[260px] space-y-3 lg:pl-6 lg:border-l lg:border-border">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Posted</p>
+                    <p className="text-sm font-semibold text-heading mt-1">{formatPostedDate(job.postedDate)}</p>
+                  </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {(job.skills || []).slice(0, 10).map((skill) => (
-                    <span
-                      key={skill}
-                      className="inline-flex items-center px-3 py-1 rounded-full bg-badge-info-bg border border-badge-info-border text-badge-info-text text-xs font-semibold"
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Compensation</p>
+                    <p className="text-sm font-semibold text-heading mt-1">
+                      {formatCompensationRange(job.salaryMin, job.maxSalary, job.salaryPeriod)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Status</p>
+                    <p className="text-sm font-semibold text-heading mt-1">{job.status || "Unknown"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Remote</p>
+                    <p className="text-sm font-semibold text-heading mt-1">
+                    {typeof job.isRemote === "boolean" ? (job.isRemote ? "Yes" : "No") : "Unknown"}
+                    </p>
+                  </div>
+
+                  {job.jobUrl && (
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(job.jobUrl, "_blank", "noopener,noreferrer")}
+                      className="w-full mt-1"
                     >
-                      {skill}
-                    </span>
-                  ))}
-                  {(job.skills || []).length === 0 && (
-                    <span className="text-sm text-muted">No skills listed</span>
+                      View Listing
+                    </Button>
                   )}
                 </div>
               </div>
-
-              <div className="lg:min-w-[260px] space-y-3 lg:pl-6 lg:border-l lg:border-border">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Posted</p>
-                  <p className="text-sm font-semibold text-heading mt-1">{formatPostedDate(job.postedDate)}</p>
-                </div>
-
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Compensation</p>
-                  <p className="text-sm font-semibold text-heading mt-1">
-                    {formatCompensationRange(job.salaryMin, job.maxSalary, job.salaryPeriod)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Status</p>
-                  <p className="text-sm font-semibold text-heading mt-1">{job.status || "Unknown"}</p>
-                </div>
-
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint font-black">Remote</p>
-                  <p className="text-sm font-semibold text-heading mt-1">
-                  {typeof job.isRemote === "boolean" ? (job.isRemote ? "Yes" : "No") : "Unknown"}
-                  </p>
-                </div>
-
-                {job.jobUrl && (
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(job.jobUrl, "_blank", "noopener,noreferrer")}
-                    className="w-full mt-1"
-                  >
-                    View Listing
-                  </Button>
-                )}
-
-                <Button
-                  onClick={() =>
-                    router.push(
-                      `/market-analyzer?role=${encodeURIComponent(
-                        job.canonicalRole || job.groupedRole || job.title
-                      )}` as any
-                    )
-                  }
-                  className="w-full mt-1"
-                >
-                  Analyze This Role
-                </Button>
-              </div>
-            </div>
-          </GlassCard>
-        ))}
+            </GlassCard>
+          );
+        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 border border-border rounded-2xl px-4 py-3 bg-surface">

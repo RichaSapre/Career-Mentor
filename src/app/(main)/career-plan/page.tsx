@@ -40,6 +40,198 @@ function formatCurrency(n: number) {
   return `$${n.toLocaleString()}`;
 }
 
+function removeExecutiveSummaryHeading(summary: string) {
+  const normalized = summary.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+
+  let index = 0;
+  while (index < lines.length && lines[index].trim().length === 0) {
+    index += 1;
+  }
+
+  if (index >= lines.length) {
+    return normalized.trim();
+  }
+
+  const firstLine = lines[index].trim();
+  const plainFirstLine = firstLine
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/^\*\*(.*)\*\*$/, "$1")
+    .replace(/^__(.*)__$/, "$1")
+    .trim();
+
+  if (/^executive summary\b/i.test(plainFirstLine)) {
+    index += 1;
+    while (index < lines.length && lines[index].trim().length === 0) {
+      index += 1;
+    }
+    return lines.slice(index).join("\n").trim();
+  }
+
+  return normalized.trim();
+}
+
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function readFirstString(record: UnknownRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string") {
+      const normalized = normalizeText(value);
+      if (normalized) return normalized;
+    }
+  }
+  return null;
+}
+
+function formatDebatePoint(item: unknown): string | null {
+  if (typeof item === "string") {
+    const normalized = normalizeText(item);
+    return normalized || null;
+  }
+
+  if (!isRecord(item)) return null;
+
+  const agent = readFirstString(item, [
+    "agent",
+    "agentName",
+    "speaker",
+    "role",
+    "name",
+    "persona",
+  ]);
+
+  const message = readFirstString(item, [
+    "point",
+    "summary",
+    "text",
+    "argument",
+    "message",
+    "content",
+    "reasoning",
+    "analysis",
+    "details",
+    "insight",
+  ]);
+
+  if (agent && message) return `${agent}: ${message}`;
+  if (message) return message;
+
+  return null;
+}
+
+function extractDebatePoints(value: unknown): string[] {
+  if (typeof value === "string") {
+    return value
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((line) => normalizeText(line))
+      .filter(Boolean);
+  }
+
+  if (isRecord(value)) {
+    const directPoint = formatDebatePoint(value);
+    const nestedValues = [
+      value.points,
+      value.debatePoints,
+      value.keyPoints,
+      value.messages,
+      value.arguments,
+      value.entries,
+      value.rounds,
+      value.summary,
+      value.text,
+      value.content,
+    ];
+
+    const nestedPoints = nestedValues.flatMap((nested) => extractDebatePoints(nested));
+    if (directPoint) nestedPoints.unshift(directPoint);
+    return Array.from(new Set(nestedPoints));
+  }
+
+  if (!Array.isArray(value)) return [];
+
+  const points: string[] = [];
+
+  for (const item of value) {
+    const directPoint = formatDebatePoint(item);
+    if (directPoint) {
+      points.push(directPoint);
+      continue;
+    }
+
+    if (!isRecord(item)) continue;
+
+    const nestedArrays = [
+      item.points,
+      item.debatePoints,
+      item.keyPoints,
+      item.messages,
+      item.arguments,
+      item.entries,
+    ];
+
+    for (const nested of nestedArrays) {
+      points.push(...extractDebatePoints(nested));
+    }
+  }
+
+  return Array.from(new Set(points));
+}
+
+function scoreDebatePoints(points: string[]) {
+  if (points.length === 0) return -Infinity;
+
+  const totalLength = points.reduce((sum, point) => sum + point.length, 0);
+  const averageLength = totalLength / points.length;
+  const punctuationRatio = points.filter((point) => /[.!?]["')\]]?\s*$/.test(point)).length / points.length;
+  const agentPrefixRatio = points.filter((point) => /^[A-Za-z][A-Za-z\s&\/-]{2,40}:\s/.test(point)).length / points.length;
+
+  return averageLength + punctuationRatio * 30 + agentPrefixRatio * 40 + Math.min(points.length, 8) * 3;
+}
+
+function getBestDebatePoints(plan: CareerPlanResponse["recommendation"] | null): string[] {
+  if (!plan) return [];
+
+  const rawPlan = plan as unknown as UnknownRecord;
+  const rawDebateSummary = isRecord(rawPlan.debateSummary) ? rawPlan.debateSummary : null;
+
+  const candidateSources: unknown[] = [
+    rawDebateSummary?.keyDebatePoints,
+    rawDebateSummary?.detailedDebatePoints,
+    rawDebateSummary?.fullDebatePoints,
+    rawDebateSummary?.debatePoints,
+    rawDebateSummary?.agentDebatePoints,
+    rawDebateSummary?.agentPerspectives,
+    rawDebateSummary?.roundSummaries,
+    rawDebateSummary?.debateLog,
+    rawDebateSummary?.fullDebateLog,
+    rawDebateSummary?.summary,
+    rawDebateSummary?.text,
+    rawPlan.keyFactors,
+  ];
+
+  const candidates = candidateSources
+    .map((source) => extractDebatePoints(source))
+    .filter((candidate) => candidate.length > 0);
+
+  if (candidates.length === 0) {
+    return Array.isArray(plan.debateSummary?.keyDebatePoints)
+      ? plan.debateSummary.keyDebatePoints.map((point) => normalizeText(point)).filter(Boolean)
+      : [];
+  }
+
+  return candidates.sort((a, b) => scoreDebatePoints(b) - scoreDebatePoints(a))[0];
+}
+
 export default function CareerPlanPage() {
   const { data: user } = useMe();
   
@@ -53,6 +245,8 @@ export default function CareerPlanPage() {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const debatePoints = useMemo(() => getBestDebatePoints(plan), [plan]);
 
   // Initialize selected roles from user profile once
   // useEffect(() => {
@@ -270,7 +464,7 @@ export default function CareerPlanPage() {
           <GlassCard className="p-8 border-l-4 border-l-accent-primary shadow-elevated">
             <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-4">Executive Summary</h2>
             <div className="text-body text-base leading-relaxed whitespace-pre-wrap">
-              {plan.executiveSummary}
+              {removeExecutiveSummaryHeading(plan.executiveSummary)}
             </div>
           </GlassCard>
 
@@ -449,23 +643,28 @@ export default function CareerPlanPage() {
             <p className="text-sm text-muted mb-4">
               Our specialized AI agents conducted <strong>{plan.debateSummary.totalRounds} rounds</strong> of debate to build this plan.
             </p>
-            <div className="space-y-3 overflow-y-auto max-h-60 pr-2 custom-scrollbar">
-              {plan.debateSummary.keyDebatePoints.map((pt, i) => {
+            <div className="space-y-3">
+              {debatePoints.map((pt, i) => {
                 const [agent, ...rest] = pt.split(":");
                 // Avoid crashing if split doesn't work well
                 return (
-                  <div key={i} className="text-sm p-3 rounded-xl bg-surface/50 border border-border/50">
+                  <div key={i} className="text-sm p-3 rounded-xl bg-surface/50 border border-border/50 break-words">
                     {rest.length > 0 ? (
                       <>
                         <span className="font-bold text-heading capitalize">{agent.replace(/_/g, " ")}:</span>
-                        <span className="text-body ml-2">{rest.join(":")}</span>
+                        <span className="text-body ml-2 whitespace-pre-wrap">{rest.join(":")}</span>
                       </>
                     ) : (
-                      <span className="text-body">{agent}</span>
+                      <span className="text-body whitespace-pre-wrap">{agent}</span>
                     )}
                   </div>
                 );
               })}
+              {debatePoints.length === 0 && (
+                <div className="text-sm p-3 rounded-xl bg-surface/50 border border-border/50 text-muted">
+                  Debate points are currently unavailable.
+                </div>
+              )}
             </div>
           </GlassCard>
 
