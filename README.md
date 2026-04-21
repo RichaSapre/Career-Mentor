@@ -30,5 +30,6 @@ npm run dev
 - The Skills step enforces **minimum 4 skills** with proficiency level (1–5).
 - Onboarding: Education → Experience → Skills → Citizenship → Career Preferences → Salary & Links.
 - Complete signup payload matches backend: `POST /auth/signup` with all fields.
-- Set `NEXT_PUBLIC_API_BASE_URL` to your backend (e.g. `http://localhost:4300/alpha/api/v1`).
+- Set `NEXT_PUBLIC_API_BASE_URL=/api/backend` for frontend calls.
+- Set `BACKEND_URL=http://localhost:4300/api/backend` so the Next.js proxy forwards to your backend.
 - UI follows your Canva design: teal background, centered glass cards, bottom navigation.

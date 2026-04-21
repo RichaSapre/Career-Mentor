@@ -15,6 +15,7 @@ export type Experience = {
   description?: string;
   techStack?: string[];
   startDate?: string;
+  endDate?: string;
   isCurrent?: boolean;
 };
 

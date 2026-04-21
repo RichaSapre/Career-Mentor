@@ -1,335 +1,1369 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { signupDraft } from "@/lib/auth/signupDraft";
 import ProfilePhotoModal from "@/components/profile/ProfilePhotoModal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useMe } from "@/features/auth/hooks";
-import { 
-  Briefcase, 
-  MapPin, 
-  Globe, 
-  Building2, 
-  GraduationCap, 
-  Banknote, 
-  FileCheck,
-  PlaneTakeoff,
-  Code
-} from "lucide-react";
+import type { Experience, UserProfile } from "@/lib/api/types";
+import { signupDraft } from "@/lib/auth/signupDraft";
+import { apiFetch } from "@/lib/api/client";
+import { API } from "@/lib/api/endpoints";
+import {
+  CITIZENSHIP_STATUSES,
+  COMMON_MAJORS,
+  DEGREE_LEVELS,
+  INDUSTRIES,
+  PROFICIENCY_LEVELS,
+  REMOTE_PREFERENCES,
+} from "@/lib/data/constants";
+import { MARKET_ROLES } from "@/lib/data/marketRoles";
+import { TECH_ROLES } from "@/lib/data/techRoles";
+import { TECH_SKILLS } from "@/lib/data/techSkills";
+import { USA_LOCATIONS } from "@/lib/data/usaLocations";
+import { USA_UNIVERSITIES } from "@/lib/data/usaUniversities";
+import { Briefcase, Code, GraduationCap, Loader2, UserCircle2 } from "lucide-react";
 
-function formatCurrency(n: number) {
-  if (n >= 1000) return `$${Math.round(n / 1000)}K`;
-  return `$${n}`;
-}
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+type SkillFormItem = {
+  skillName: string;
+  proficiencyLevel: number;
 };
 
+type ExperienceFormItem = {
+  title: string;
+  company: string;
+  description: string;
+  startMonth: string;
+  startYear: string;
+  endMonth: string;
+  endYear: string;
+  duration: string;
+  techStack: string;
+  isCurrent: boolean;
+};
+
+type ProfileFormState = {
+  fullName: string;
+  email: string;
+  degreeLevel: string;
+  major: string;
+  university: string;
+  graduationDate: string;
+  gpa: string;
+  citizenshipStatus: string;
+  needsSponsorship: boolean;
+  targetRoles: string[];
+  preferredLocations: string[];
+  remotePreference: string;
+  industryPreferences: string[];
+  relocationWillingness: boolean;
+  salaryMin: string;
+  salaryMax: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  portfolioUrl: string;
+  skills: SkillFormItem[];
+  experiences: ExperienceFormItem[];
+};
+
+const ROLE_OPTIONS = Array.from(new Set([...TECH_ROLES, ...MARKET_ROLES])).sort((a, b) =>
+  a.localeCompare(b)
+);
+
+const MONTH_OPTIONS = [
+  { value: "01", label: "January" },
+  { value: "02", label: "February" },
+  { value: "03", label: "March" },
+  { value: "04", label: "April" },
+  { value: "05", label: "May" },
+  { value: "06", label: "June" },
+  { value: "07", label: "July" },
+  { value: "08", label: "August" },
+  { value: "09", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
+
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 31 }, (_, i) => String(currentYear + 3 - i));
+
+function emptyExperience(): ExperienceFormItem {
+  return {
+    title: "",
+    company: "",
+    description: "",
+    startMonth: "",
+    startYear: "",
+    endMonth: "",
+    endYear: "",
+    duration: "",
+    techStack: "",
+    isCurrent: false,
+  };
+}
+
+function emptyForm(): ProfileFormState {
+  return {
+    fullName: "",
+    email: "",
+    degreeLevel: "",
+    major: "",
+    university: "",
+    graduationDate: "",
+    gpa: "",
+    citizenshipStatus: "",
+    needsSponsorship: false,
+    targetRoles: [],
+    preferredLocations: [],
+    remotePreference: "",
+    industryPreferences: [],
+    relocationWillingness: false,
+    salaryMin: "",
+    salaryMax: "",
+    linkedinUrl: "",
+    githubUrl: "",
+    portfolioUrl: "",
+    skills: [],
+    experiences: [],
+  };
+}
+
+function pickString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string") return value;
+  }
+  return "";
+}
+
+function normalizeStringArray(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+
+  return result;
+}
+
+function normalizeSkills(values: unknown): SkillFormItem[] {
+  if (!Array.isArray(values)) return [];
+
+  const seen = new Set<string>();
+  const skills: SkillFormItem[] = [];
+
+  for (const raw of values) {
+    let skillName = "";
+    let proficiencyLevel = 3;
+
+    if (typeof raw === "string") {
+      skillName = raw;
+    } else if (raw && typeof raw === "object") {
+      const skillObj = raw as Record<string, unknown>;
+      skillName = pickString(skillObj.skillName, skillObj.skill_name);
+      if (typeof skillObj.proficiencyLevel === "number") {
+        proficiencyLevel = skillObj.proficiencyLevel;
+      }
+    }
+
+    const trimmed = skillName.trim();
+    if (!trimmed) continue;
+
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    skills.push({
+      skillName: trimmed,
+      proficiencyLevel: Math.max(1, Math.min(5, Math.round(proficiencyLevel || 3))),
+    });
+  }
+
+  return skills;
+}
+
+function normalizeExperiences(values: unknown): ExperienceFormItem[] {
+  if (!Array.isArray(values)) return [];
+
+  return values
+    .map((raw) => {
+      if (!raw || typeof raw !== "object") return null;
+
+      const exp = raw as Record<string, unknown>;
+      const isCurrent = Boolean(exp.isCurrent);
+
+      const startDate = typeof exp.startDate === "string" ? exp.startDate : "";
+      const [startYear = "", startMonthRaw = ""] = startDate.split("-");
+      const startMonth = startMonthRaw ? startMonthRaw.padStart(2, "0") : "";
+
+      const endDate = typeof exp.endDate === "string" ? exp.endDate : "";
+      const [endYear = "", endMonthRaw = ""] = endDate.split("-");
+      const endMonth = endMonthRaw ? endMonthRaw.padStart(2, "0") : "";
+
+      return {
+        title: pickString(exp.title).trim(),
+        company: pickString(exp.company).trim(),
+        description: pickString(exp.description),
+        startMonth:
+          startMonth && MONTH_OPTIONS.some((item) => item.value === startMonth) ? startMonth : "",
+        startYear:
+          startYear && YEAR_OPTIONS.includes(startYear)
+            ? startYear
+            : pickString(exp.year),
+        endMonth:
+          isCurrent || !endMonth || !MONTH_OPTIONS.some((item) => item.value === endMonth)
+            ? ""
+            : endMonth,
+        endYear: isCurrent || !endYear || !YEAR_OPTIONS.includes(endYear) ? "" : endYear,
+        duration: pickString(exp.duration),
+        techStack: Array.isArray(exp.techStack)
+          ? exp.techStack.filter((item): item is string => typeof item === "string").join(", ")
+          : pickString(exp.techStack),
+        isCurrent,
+      };
+    })
+    .filter((item): item is ExperienceFormItem => item !== null);
+}
+
+function createFormState(user?: UserProfile): ProfileFormState {
+  const draft = signupDraft.get();
+  const userRecord = (user ?? {}) as Record<string, unknown>;
+
+  const salaryRange =
+    user?.salaryRange ??
+    (draft.salaryRange
+      ? {
+          min: draft.salaryRange.min,
+          max: draft.salaryRange.max,
+          currency: draft.salaryRange.currency,
+        }
+      : undefined);
+
+  const sourceSkills =
+    Array.isArray(user?.skills) && user.skills.length > 0 ? user.skills : draft.skills ?? [];
+  const sourceExperiences =
+    Array.isArray(user?.experiences) && user.experiences.length > 0
+      ? user.experiences
+      : draft.experiences ?? [];
+
+  return {
+    fullName: pickString(user?.fullName, userRecord.full_name, draft.fullName),
+    email: pickString(user?.email, userRecord.email, draft.email),
+    degreeLevel: pickString(user?.degreeLevel, userRecord.degree_level, draft.degreeLevel),
+    major: pickString(user?.major, userRecord.major, draft.major),
+    university: pickString(user?.university, userRecord.university, draft.university),
+    graduationDate: pickString(
+      user?.graduationDate,
+      userRecord.graduation_date,
+      draft.graduationDate
+    ),
+    gpa: user?.gpa != null ? String(user.gpa) : draft.gpa != null ? String(draft.gpa) : "",
+    citizenshipStatus: pickString(
+      user?.citizenshipStatus,
+      userRecord.citizenship_status,
+      draft.citizenshipStatus
+    ),
+    needsSponsorship:
+      typeof user?.needsSponsorship === "boolean"
+        ? user.needsSponsorship
+        : typeof draft.needsSponsorship === "boolean"
+          ? draft.needsSponsorship
+          : false,
+    targetRoles: normalizeStringArray(user?.targetRoles ?? draft.targetRoles ?? []),
+    preferredLocations: normalizeStringArray(
+      user?.preferredLocations ?? draft.preferredLocations ?? []
+    ),
+    remotePreference: pickString(
+      user?.remotePreference,
+      userRecord.remote_preference,
+      draft.remotePreference
+    ),
+    industryPreferences: normalizeStringArray(
+      user?.industryPreferences ?? draft.industryPreferences ?? []
+    ),
+    relocationWillingness:
+      typeof user?.relocationWillingness === "boolean"
+        ? user.relocationWillingness
+        : typeof draft.relocationWillingness === "boolean"
+          ? draft.relocationWillingness
+          : false,
+    salaryMin: salaryRange?.min != null ? String(salaryRange.min) : "",
+    salaryMax: salaryRange?.max != null ? String(salaryRange.max) : "",
+    linkedinUrl: pickString(user?.linkedinUrl, userRecord.linkedin_url, draft.linkedinUrl),
+    githubUrl: pickString(user?.githubUrl, userRecord.github_url, draft.githubUrl),
+    portfolioUrl: pickString(user?.portfolioUrl, userRecord.portfolio_url, draft.portfolioUrl),
+    skills: normalizeSkills(sourceSkills),
+    experiences: normalizeExperiences(sourceExperiences),
+  };
+}
+
 export default function ProfilePage() {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: user, isLoading } = useMe();
+
+  const [form, setForm] = useState<ProfileFormState>(emptyForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const draft = signupDraft.get();
-  
-  // Basic info mapping
-  const displayName = user?.fullName ?? (user as any)?.full_name ?? draft.fullName ?? "Your Name";
-  const displayEmail = user?.email ?? draft.email ?? "your@email.com";
-  
-  // Education mapping
-  const education = user
-    ? [{ 
-        courseName: `${user.degreeLevel ?? ""} ${user.major ?? ""}`.trim(), 
-        schoolName: user.university, 
-        concentration: user.major, 
-        gpa: user.gpa, 
-        gradYear: user.graduationDate?.slice(0, 4) 
-      }].filter((e) => e.schoolName)
-    : (draft.university ? [{ 
-        courseName: `${draft.degreeLevel ?? ""} ${draft.major ?? ""}`.trim(), 
-        schoolName: draft.university, 
-        concentration: draft.major, 
-        gpa: draft.gpa, 
-        gradYear: draft.graduationDate?.slice(0, 4) 
-      }] : []);
-      
-  const experiences = user?.experiences ?? draft.experiences ?? [];
-  const skills = user?.skills ?? [];
+  const [roleToAdd, setRoleToAdd] = useState("");
+  const [customRole, setCustomRole] = useState("");
+  const [locationToAdd, setLocationToAdd] = useState("");
+  const [customLocation, setCustomLocation] = useState("");
+  const [industryToAdd, setIndustryToAdd] = useState("");
+  const [skillToAdd, setSkillToAdd] = useState("");
+  const [customSkill, setCustomSkill] = useState("");
 
   useEffect(() => {
-    if (draft.profilePhoto) setImagePreview(draft.profilePhoto);
-  }, []);
+    setForm(createFormState(user));
+    const draft = signupDraft.get();
+    setImagePreview(draft.profilePhoto ?? null);
+  }, [user]);
 
-  if (isLoading) {
+  const availableRoles = useMemo(
+    () =>
+      ROLE_OPTIONS.filter(
+        (role) => !form.targetRoles.some((selected) => selected.toLowerCase() === role.toLowerCase())
+      ),
+    [form.targetRoles]
+  );
+
+  const availableLocations = useMemo(
+    () =>
+      USA_LOCATIONS.filter(
+        (location) =>
+          !form.preferredLocations.some((selected) => selected.toLowerCase() === location.toLowerCase())
+      ),
+    [form.preferredLocations]
+  );
+
+  const availableIndustries = useMemo(
+    () =>
+      INDUSTRIES.filter(
+        (industry) =>
+          !form.industryPreferences.some((selected) => selected.toLowerCase() === industry.toLowerCase())
+      ),
+    [form.industryPreferences]
+  );
+
+  const availableSkills = useMemo(
+    () =>
+      TECH_SKILLS.filter(
+        (skill) => !form.skills.some((selected) => selected.skillName.toLowerCase() === skill.toLowerCase())
+      ),
+    [form.skills]
+  );
+
+  function setField<K extends keyof ProfileFormState>(field: K, value: ProfileFormState[K]) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function addArrayValue(
+    field: "targetRoles" | "preferredLocations" | "industryPreferences",
+    value: string
+  ) {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    setForm((prev) => {
+      const exists = prev[field].some((item) => item.toLowerCase() === trimmed.toLowerCase());
+      if (exists) return prev;
+      return { ...prev, [field]: [...prev[field], trimmed] };
+    });
+  }
+
+  function removeArrayValue(
+    field: "targetRoles" | "preferredLocations" | "industryPreferences",
+    value: string
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((item) => item.toLowerCase() !== value.toLowerCase()),
+    }));
+  }
+
+  function addSkill(rawSkillName: string) {
+    const skillName = rawSkillName.trim();
+    if (!skillName) return;
+
+    setForm((prev) => {
+      const exists = prev.skills.some((skill) => skill.skillName.toLowerCase() === skillName.toLowerCase());
+      if (exists) return prev;
+      return {
+        ...prev,
+        skills: [...prev.skills, { skillName, proficiencyLevel: 3 }],
+      };
+    });
+  }
+
+  function updateSkillLevel(skillName: string, proficiencyLevel: number) {
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.map((skill) =>
+        skill.skillName.toLowerCase() === skillName.toLowerCase()
+          ? { ...skill, proficiencyLevel }
+          : skill
+      ),
+    }));
+  }
+
+  function removeSkill(skillName: string) {
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((skill) => skill.skillName.toLowerCase() !== skillName.toLowerCase()),
+    }));
+  }
+
+  function addExperience() {
+    setForm((prev) => ({
+      ...prev,
+      experiences: [...prev.experiences, emptyExperience()],
+    }));
+  }
+
+  function removeExperience(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      experiences: prev.experiences.filter((_, i) => i !== index),
+    }));
+  }
+
+  function updateExperience(index: number, patch: Partial<ExperienceFormItem>) {
+    setForm((prev) => {
+      const next = [...prev.experiences];
+      next[index] = { ...next[index], ...patch };
+      return { ...prev, experiences: next };
+    });
+  }
+
+  function resetFromCurrentData() {
+    setForm(createFormState(user));
+    setError("");
+    setSuccess("");
+  }
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!form.citizenshipStatus) {
+      setError("Please select citizenship/work authorization status.");
+      return;
+    }
+
+    if (!form.remotePreference) {
+      setError("Please select a remote preference.");
+      return;
+    }
+
+    const normalizedRoles = normalizeStringArray(form.targetRoles);
+    if (!normalizedRoles.length) {
+      setError("Please add at least one target role.");
+      return;
+    }
+
+    const normalizedLocations = normalizeStringArray(form.preferredLocations);
+    if (!normalizedLocations.length) {
+      setError("Please add at least one preferred location.");
+      return;
+    }
+
+    const gpaValue = form.gpa.trim() ? Number(form.gpa) : undefined;
+    if (gpaValue !== undefined && (Number.isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4)) {
+      setError("GPA must be between 0 and 4.");
+      return;
+    }
+
+    const hasSalaryMin = form.salaryMin.trim().length > 0;
+    const hasSalaryMax = form.salaryMax.trim().length > 0;
+    if (hasSalaryMin !== hasSalaryMax) {
+      setError("Please provide both salary minimum and salary maximum.");
+      return;
+    }
+
+    let salaryRange:
+      | {
+          min: number;
+          max: number;
+          currency: string;
+        }
+      | undefined;
+
+    if (hasSalaryMin && hasSalaryMax) {
+      const min = Number(form.salaryMin);
+      const max = Number(form.salaryMax);
+
+      if (Number.isNaN(min) || Number.isNaN(max)) {
+        setError("Salary values must be valid numbers.");
+        return;
+      }
+
+      if (min > max) {
+        setError("Salary minimum cannot be greater than salary maximum.");
+        return;
+      }
+
+      salaryRange = {
+        min: Math.round(min),
+        max: Math.round(max),
+        currency: "USD",
+      };
+    }
+
+    const normalizedIndustries = normalizeStringArray(form.industryPreferences);
+    const normalizedSkills = normalizeSkills(form.skills);
+    const normalizedExperiences = form.experiences.reduce<Experience[]>((acc, experience) => {
+      const title = experience.title.trim();
+      const company = experience.company.trim();
+      if (!title || !company) return acc;
+
+      const startMonth = experience.startMonth ? experience.startMonth.padStart(2, "0") : "";
+      const startYear = experience.startYear.trim();
+      const startDate = startYear && startMonth ? `${startYear}-${startMonth}-01` : undefined;
+
+      const endMonth = experience.endMonth ? experience.endMonth.padStart(2, "0") : "";
+      const endYear = experience.endYear.trim();
+      const endDate =
+        !experience.isCurrent && endYear && endMonth ? `${endYear}-${endMonth}-01` : undefined;
+
+      const techStack = experience.techStack
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      const mapped: Experience = {
+        title,
+        company,
+        isCurrent: experience.isCurrent,
+      };
+
+      const description = experience.description.trim();
+      if (description) mapped.description = description;
+
+      const duration = experience.duration.trim();
+      if (duration) mapped.duration = duration;
+
+      if (techStack.length) mapped.techStack = techStack;
+      if (startDate) mapped.startDate = startDate;
+      if (endDate) mapped.endDate = endDate;
+
+      acc.push(mapped);
+      return acc;
+    }, []);
+
+    const payload: Record<string, unknown> = {
+      fullName: form.fullName.trim() || undefined,
+      email: form.email.trim() || undefined,
+      degreeLevel: form.degreeLevel || undefined,
+      major: form.major.trim() || undefined,
+      university: form.university.trim() || undefined,
+      graduationDate: form.graduationDate || undefined,
+      gpa: gpaValue,
+      citizenshipStatus: form.citizenshipStatus || undefined,
+      needsSponsorship: form.needsSponsorship,
+      targetRoles: normalizedRoles,
+      preferredLocations: normalizedLocations,
+      remotePreference: form.remotePreference || undefined,
+      industryPreferences: normalizedIndustries,
+      relocationWillingness: form.relocationWillingness,
+      salaryRange,
+      linkedinUrl: form.linkedinUrl.trim() || undefined,
+      githubUrl: form.githubUrl.trim() || undefined,
+      portfolioUrl: form.portfolioUrl.trim() || undefined,
+      skills: normalizedSkills,
+      experiences: normalizedExperiences,
+    };
+
+    setSaving(true);
+
+    try {
+      await apiFetch(API.patchProfile, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+        auth: true,
+      });
+
+      signupDraft.set({
+        fullName: form.fullName.trim() || undefined,
+        email: form.email.trim() || undefined,
+        degreeLevel: form.degreeLevel || undefined,
+        major: form.major.trim() || undefined,
+        university: form.university.trim() || undefined,
+        graduationDate: form.graduationDate || undefined,
+        gpa: gpaValue,
+        citizenshipStatus: form.citizenshipStatus || undefined,
+        needsSponsorship: form.needsSponsorship,
+        targetRoles: normalizedRoles,
+        preferredLocations: normalizedLocations,
+        remotePreference: form.remotePreference || undefined,
+        industryPreferences: normalizedIndustries,
+        relocationWillingness: form.relocationWillingness,
+        salaryRange,
+        linkedinUrl: form.linkedinUrl.trim() || undefined,
+        githubUrl: form.githubUrl.trim() || undefined,
+        portfolioUrl: form.portfolioUrl.trim() || undefined,
+        skills: normalizedSkills,
+        experiences: normalizedExperiences,
+        profilePhoto: imagePreview,
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+      setSuccess("Profile updated successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (isLoading && !user) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="w-8 h-8 rounded-full border-t-2 border-accent-primary animate-spin"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-accent-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-10 max-w-6xl mx-auto pb-20">
-
-      {/* Header Section */}
-      <GlassCard className="p-10 flex flex-col md:flex-row items-center md:items-start gap-8 shadow-card relative overflow-hidden">
-        {/* Subtle background gradient based on prestige/activity could go here */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-accent-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        
-        <div className="relative shrink-0">
-          <div className="w-32 h-32 rounded-full bg-surface border-4 border-surface shadow-elevated overflow-hidden transition-all">
-            {imagePreview ? (
-              <img
-                src={imagePreview}
-                className="w-full h-full object-cover"
-                alt="Profile"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-faint text-sm font-medium bg-surface-inset">
-                No Photo
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="absolute bottom-0 right-0 bg-btn-primary-bg text-btn-primary-text text-xs px-4 py-1.5 rounded-full shadow-glow-primary hover:bg-btn-primary-hover hover:scale-105 transition-all font-bold"
-          >
-            Edit
-          </button>
-        </div>
-
-        <div className="text-center md:text-left flex-1 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] tracking-tight">
-                {displayName}
-              </h1>
-              <p className="text-muted mt-1 font-medium">{displayEmail}</p>
-            </div>
-            
-            <button
-              onClick={() => router.push("/profile/edit")}
-              className="px-5 py-2.5 rounded-xl bg-btn-secondary-bg border border-btn-secondary-border text-btn-secondary-text font-bold hover:bg-btn-secondary-hover transition-all text-sm shrink-0"
-            >
-              Edit Profile
-            </button>
-          </div>
-
-          {/* Quick Info Badges */}
-          <div className="flex flex-wrap items-center gap-3 mt-6">
-            {user?.citizenshipStatus && (
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-inset border border-border text-xs font-semibold text-heading">
-                <Globe className="w-3.5 h-3.5 text-accent-primary" />
-                {user.citizenshipStatus}
-              </span>
-            )}
-            {user?.needsSponsorship !== undefined && (
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-inset border border-border text-xs font-semibold text-heading">
-                <FileCheck className="w-3.5 h-3.5 text-accent-primary" />
-                {user.needsSponsorship ? "Requires Sponsorship" : "No Sponsorship Needed"}
-              </span>
-            )}
-            {user?.linkedinUrl && (
-              <a href={user.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A66C2]/10 border border-[#0A66C2]/20 text-xs font-semibold text-[#0A66C2] hover:bg-[#0A66C2]/20 transition-colors">
-                LinkedIn
-              </a>
-            )}
-          </div>
-        </div>
-      </GlassCard>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        {/* Left Column: Preferences */}
-        <div className="md:col-span-1 space-y-8">
-          <GlassCard className="p-6 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-6 flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-accent-primary" /> Target Roles
-            </h2>
-            {user?.targetRoles?.length ? (
-              <div className="flex flex-col gap-2">
-                {user.targetRoles.map((role: string, i: number) => (
-                  <div key={i} className="px-3 py-2 bg-tag-bg border border-tag-border rounded-lg text-sm font-medium text-tag-text">
-                    {role}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-faint">No target roles specified.</p>
-            )}
-          </GlassCard>
-
-          <GlassCard className="p-6 shadow-sm space-y-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-faint flex items-center gap-2">
-              Preferences
-            </h2>
-            
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted mb-2">
-                <Banknote className="w-3.5 h-3.5" /> Expected Salary
-              </div>
-              <div className="text-sm font-medium text-heading">
-                {user?.salaryRange 
-                  ? `${formatCurrency(user.salaryRange.min)} - ${formatCurrency(user.salaryRange.max)} ${user.salaryRange.currency}`
-                  : "Not specified"}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted mb-2">
-                <MapPin className="w-3.5 h-3.5" /> Locations
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {user?.preferredLocations?.length ? (
-                  user.preferredLocations.map((loc: string, i: number) => (
-                    <span key={i} className="text-xs font-medium px-2 py-1 rounded bg-surface-inset border border-border">{loc}</span>
-                  ))
+    <div className="max-w-6xl mx-auto pb-20">
+      <form onSubmit={handleSave} className="space-y-8">
+        <GlassCard className="p-8">
+          <div className="flex flex-col lg:flex-row gap-8 lg:items-center">
+            <div className="relative shrink-0">
+              <div className="w-28 h-28 rounded-full bg-surface border-4 border-surface shadow-elevated overflow-hidden">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-sm text-faint">Not specified</span>
+                  <div className="h-full flex items-center justify-center text-faint text-sm bg-surface-inset">
+                    No Photo
+                  </div>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="absolute bottom-0 right-0 px-3 py-1 text-xs rounded-full bg-btn-primary-bg text-btn-primary-text"
+              >
+                Edit
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-muted mb-1">Remote</div>
-                <div className="text-sm font-medium text-heading">{user?.remotePreference || "Any"}</div>
+                <Label>Full Name *</Label>
+                <Input
+                  value={form.fullName}
+                  onChange={(event) => setField("fullName", event.target.value)}
+                  required
+                  className="mt-1"
+                />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted mb-1">
-                  <PlaneTakeoff className="w-3 h-3" /> Relocation
-                </div>
-                <div className="text-sm font-medium text-heading">
-                  {user?.relocationWillingness ? "Willing" : "Not Willing"}
-                </div>
-              </div>
-            </div>
 
-            {user?.industryPreferences?.length ? (
               <div>
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted mb-2">
-                  <Building2 className="w-3.5 h-3.5" /> Industries
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {user.industryPreferences.map((ind: string, i: number) => (
-                    <span key={i} className="text-xs font-medium px-2 py-1 rounded bg-surface-inset border border-border">{ind}</span>
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setField("email", event.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Citizenship / Work Authorization *</Label>
+                <select
+                  value={form.citizenshipStatus}
+                  onChange={(event) => setField("citizenshipStatus", event.target.value)}
+                  className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  required
+                >
+                  <option value="">Select status</option>
+                  {CITIZENSHIP_STATUSES.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <Label>Needs Sponsorship</Label>
+                <select
+                  value={form.needsSponsorship ? "yes" : "no"}
+                  onChange={(event) => setField("needsSponsorship", event.target.value === "yes")}
+                  className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {(error || success) && (
+            <div className="mt-4 space-y-2">
+              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              {success ? <p className="text-sm text-emerald-400">{success}</p> : null}
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save Profile"}
+            </Button>
+            <Button type="button" variant="ghost" onClick={resetFromCurrentData} disabled={saving}>
+              Reset Changes
+            </Button>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-5 flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-accent-primary" />
+            Education
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Degree Level *</Label>
+              <select
+                value={form.degreeLevel}
+                onChange={(event) => setField("degreeLevel", event.target.value)}
+                className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                required
+              >
+                <option value="">Select degree level</option>
+                {DEGREE_LEVELS.map((degreeLevel) => (
+                  <option key={degreeLevel} value={degreeLevel}>
+                    {degreeLevel}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label>Major / Concentration *</Label>
+              <Input
+                value={form.major}
+                onChange={(event) => setField("major", event.target.value)}
+                list="major-options"
+                placeholder="Computer Science"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <Label>University *</Label>
+              <Input
+                value={form.university}
+                onChange={(event) => setField("university", event.target.value)}
+                list="university-options"
+                placeholder="Stanford University"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Graduation Date</Label>
+                <Input
+                  type="date"
+                  value={form.graduationDate}
+                  onChange={(event) => setField("graduationDate", event.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>GPA (0 - 4)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="4"
+                  value={form.gpa}
+                  onChange={(event) => setField("gpa", event.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <datalist id="major-options">
+            {COMMON_MAJORS.map((major) => (
+              <option key={major} value={major} />
+            ))}
+          </datalist>
+
+          <datalist id="university-options">
+            {USA_UNIVERSITIES.map((university) => (
+              <option key={university} value={university} />
+            ))}
+          </datalist>
+        </GlassCard>
+
+        <GlassCard className="p-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-5 flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-accent-primary" />
+            Career Preferences
+          </h2>
+
+          <div className="space-y-6">
+            <div>
+              <Label>Target Roles *</Label>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 mt-1">
+                <select
+                  value={roleToAdd}
+                  onChange={(event) => setRoleToAdd(event.target.value)}
+                  className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="">Select role to add</option>
+                  {availableRoles.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    addArrayValue("targetRoles", roleToAdd);
+                    setRoleToAdd("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 mt-2">
+                <Input
+                  value={customRole}
+                  onChange={(event) => setCustomRole(event.target.value)}
+                  placeholder="Or add custom role"
+                />
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    addArrayValue("targetRoles", customRole);
+                    setCustomRole("");
+                  }}
+                >
+                  Add Custom
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-3">
+                {form.targetRoles.map((role) => (
+                  <span
+                    key={role}
+                    className="inline-flex items-center gap-2 rounded-full border border-tag-border bg-tag-bg px-3 py-1 text-sm text-tag-text"
+                  >
+                    {role}
+                    <button
+                      type="button"
+                      onClick={() => removeArrayValue("targetRoles", role)}
+                      className="text-faint hover:text-red-400"
+                    >
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Preferred Locations *</Label>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 mt-1">
+                <select
+                  value={locationToAdd}
+                  onChange={(event) => setLocationToAdd(event.target.value)}
+                  className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="">Select location to add</option>
+                  {availableLocations.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    addArrayValue("preferredLocations", locationToAdd);
+                    setLocationToAdd("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 mt-2">
+                <Input
+                  value={customLocation}
+                  onChange={(event) => setCustomLocation(event.target.value)}
+                  placeholder="Or add custom location"
+                />
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    addArrayValue("preferredLocations", customLocation);
+                    setCustomLocation("");
+                  }}
+                >
+                  Add Custom
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-3">
+                {form.preferredLocations.map((location) => (
+                  <span
+                    key={location}
+                    className="inline-flex items-center gap-2 rounded-full border border-tag-border bg-tag-bg px-3 py-1 text-sm text-tag-text"
+                  >
+                    {location}
+                    <button
+                      type="button"
+                      onClick={() => removeArrayValue("preferredLocations", location)}
+                      className="text-faint hover:text-red-400"
+                    >
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Remote Preference *</Label>
+                <select
+                  value={form.remotePreference}
+                  onChange={(event) => setField("remotePreference", event.target.value)}
+                  className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  required
+                >
+                  <option value="">Select preference</option>
+                  {REMOTE_PREFERENCES.map((preference) => (
+                    <option key={preference.value} value={preference.value}>
+                      {preference.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label>Relocation Willingness</Label>
+                <select
+                  value={form.relocationWillingness ? "yes" : "no"}
+                  onChange={(event) => setField("relocationWillingness", event.target.value === "yes")}
+                  className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="no">Not willing</option>
+                  <option value="yes">Willing</option>
+                </select>
+              </div>
+
+              <div>
+                <Label>Expected Salary (USD)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={form.salaryMin}
+                    onChange={(event) => setField("salaryMin", event.target.value)}
+                    placeholder="Min"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    value={form.salaryMax}
+                    onChange={(event) => setField("salaryMax", event.target.value)}
+                    placeholder="Max"
+                  />
                 </div>
               </div>
-            ) : null}
-          </GlassCard>
-        </div>
+            </div>
 
-        {/* Right Column: Education, Experience, Skills */}
-        <div className="md:col-span-2 space-y-8">
-          
-          {/* Education */}
-          <GlassCard className="p-8 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-6 flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-accent-primary" /> Education
-            </h2>
-            {education?.length ? (
-              <div className="space-y-6">
-                {education.map((edu: any, index: number) => (
-                  <div key={index} className="flex gap-4 p-4 rounded-xl bg-surface-inset/50 border border-border/50">
-                    <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-5 h-5 text-accent-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-heading">{edu.courseName}</h3>
-                      <p className="text-muted font-medium">{edu.schoolName}</p>
-                      <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-xs font-semibold text-faint uppercase tracking-wider">
-                        {edu.concentration && <span>{edu.concentration}</span>}
-                        {edu.gpa && <span className="text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">GPA: {edu.gpa}</span>}
-                        {edu.gradYear && <span>Class of {edu.gradYear}</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            <div>
+              <Label>Industry Preferences</Label>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 mt-1">
+                <select
+                  value={industryToAdd}
+                  onChange={(event) => setIndustryToAdd(event.target.value)}
+                  className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="">Select industry to add</option>
+                  {availableIndustries.map((industry) => (
+                    <option key={industry} value={industry}>
+                      {industry}
+                    </option>
+                  ))}
+                </select>
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    addArrayValue("industryPreferences", industryToAdd);
+                    setIndustryToAdd("");
+                  }}
+                >
+                  Add
+                </Button>
               </div>
-            ) : (
-              <p className="text-sm text-faint">No education added yet.</p>
-            )}
-          </GlassCard>
 
-          {/* Experience */}
-          <GlassCard className="p-8 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-6 flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-accent-primary" /> Experience
-            </h2>
-            {experiences?.length ? (
-              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                {experiences.map((exp: any, index: number) => (
-                  <div key={index} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-surface bg-accent-primary shrink-0 relative z-10 shadow-sm">
-                      <Building2 className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl bg-surface-inset/50 border border-border/50 shadow-sm ml-4 md:ml-0 md:group-odd:mr-4 md:group-even:ml-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-bold text-heading text-lg">{exp.title}</h3>
-                      </div>
-                      <div className="text-muted font-medium">{exp.company}</div>
-                      <time className="block text-xs font-semibold text-faint uppercase tracking-wider mt-2">{exp.duration}</time>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-faint">No experience added yet.</p>
-            )}
-          </GlassCard>
-
-          {/* Skills */}
-          <GlassCard className="p-8 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-6 flex items-center gap-2">
-              <Code className="w-4 h-4 text-accent-primary" /> Technical Skills
-            </h2>
-            {skills?.length ? (
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill: any, index: number) => {
-                  const name = typeof skill === "string" ? skill : (skill.skillName ?? skill.skill_name);
-                  const level = typeof skill === "object" ? skill.proficiencyLevel : null;
-                  
-                  return (
-                    <div
-                      key={index}
-                      className="px-4 py-2 bg-surface-inset border border-border rounded-xl text-sm font-semibold text-heading flex items-center gap-2"
+              <div className="flex flex-wrap gap-2 mt-3">
+                {form.industryPreferences.map((industry) => (
+                  <span
+                    key={industry}
+                    className="inline-flex items-center gap-2 rounded-full border border-tag-border bg-tag-bg px-3 py-1 text-sm text-tag-text"
+                  >
+                    {industry}
+                    <button
+                      type="button"
+                      onClick={() => removeArrayValue("industryPreferences", industry)}
+                      className="text-faint hover:text-red-400"
                     >
-                      {name}
-                      {level && (
-                        <div className="flex gap-0.5 ml-1">
-                          {[1, 2, 3, 4, 5].map((lvl) => (
-                            <div 
-                              key={lvl} 
-                              className={`w-1.5 h-1.5 rounded-full ${lvl <= level ? "bg-accent-primary" : "bg-border"}`}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      x
+                    </button>
+                  </span>
+                ))}
               </div>
-            ) : (
-              <p className="text-sm text-faint">No skills added yet.</p>
-            )}
-          </GlassCard>
+            </div>
+          </div>
+        </GlassCard>
 
+        <GlassCard className="p-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-5 flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-accent-primary" />
+            Experience
+          </h2>
+
+          <div className="space-y-4">
+            {form.experiences.length === 0 ? <p className="text-sm text-faint">No experience added yet.</p> : null}
+
+            {form.experiences.map((experience, index) => (
+              <div
+                key={`experience-${index}`}
+                className="rounded-xl border border-border p-4 bg-surface-inset/50"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-semibold text-heading">Experience {index + 1}</p>
+                  <Button type="button" variant="ghost" onClick={() => removeExperience(index)}>
+                    Remove
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>Title *</Label>
+                    <Input
+                      value={experience.title}
+                      onChange={(event) => updateExperience(index, { title: event.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Company *</Label>
+                    <Input
+                      value={experience.company}
+                      onChange={(event) => updateExperience(index, { company: event.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <Label>Start Month</Label>
+                    <select
+                      value={experience.startMonth}
+                      onChange={(event) =>
+                        updateExperience(index, { startMonth: event.target.value })
+                      }
+                      className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      <option value="">Select month</option>
+                      {MONTH_OPTIONS.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label>Start Year</Label>
+                    <select
+                      value={experience.startYear}
+                      onChange={(event) =>
+                        updateExperience(index, { startYear: event.target.value })
+                      }
+                      className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      <option value="">Select year</option>
+                      {YEAR_OPTIONS.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <Label>Currently Working Here</Label>
+                  <select
+                    value={experience.isCurrent ? "yes" : "no"}
+                    onChange={(event) => {
+                      const isCurrent = event.target.value === "yes";
+                      updateExperience(index, {
+                        isCurrent,
+                        ...(isCurrent ? { endMonth: "", endYear: "" } : {}),
+                      });
+                    }}
+                    className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <Label>End Month</Label>
+                    <select
+                      value={experience.endMonth}
+                      onChange={(event) => updateExperience(index, { endMonth: event.target.value })}
+                      disabled={experience.isCurrent}
+                      className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm disabled:opacity-60"
+                    >
+                      <option value="">{experience.isCurrent ? "Present" : "Select month"}</option>
+                      {MONTH_OPTIONS.map((month) => (
+                        <option key={month.value} value={month.value}>
+                          {month.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label>End Year</Label>
+                    <select
+                      value={experience.endYear}
+                      onChange={(event) => updateExperience(index, { endYear: event.target.value })}
+                      disabled={experience.isCurrent}
+                      className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm disabled:opacity-60"
+                    >
+                      <option value="">{experience.isCurrent ? "Present" : "Select year"}</option>
+                      {YEAR_OPTIONS.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={experience.description}
+                    onChange={(event) => updateExperience(index, { description: event.target.value })}
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <Label>Tech Stack (comma separated)</Label>
+                    <Input
+                      value={experience.techStack}
+                      onChange={(event) => updateExperience(index, { techStack: event.target.value })}
+                      placeholder="React, Node.js, PostgreSQL"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Duration</Label>
+                    <Input
+                      value={experience.duration}
+                      onChange={(event) => updateExperience(index, { duration: event.target.value })}
+                      placeholder="2 years"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <Button type="button" variant="secondary" onClick={addExperience}>
+              Add Experience
+            </Button>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-5 flex items-center gap-2">
+            <Code className="w-4 h-4 text-accent-primary" />
+            Skills
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
+            <select
+              value={skillToAdd}
+              onChange={(event) => setSkillToAdd(event.target.value)}
+              className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="">Select skill to add</option>
+              {availableSkills.map((skill) => (
+                <option key={skill} value={skill}>
+                  {skill}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              type="button"
+              onClick={() => {
+                addSkill(skillToAdd);
+                setSkillToAdd("");
+              }}
+            >
+              Add
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 mt-2">
+            <Input
+              value={customSkill}
+              onChange={(event) => setCustomSkill(event.target.value)}
+              placeholder="Or add custom skill"
+            />
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                addSkill(customSkill);
+                setCustomSkill("");
+              }}
+            >
+              Add Custom
+            </Button>
+          </div>
+
+          <div className="space-y-3 mt-4">
+            {form.skills.map((skill) => (
+              <div
+                key={skill.skillName}
+                className="flex flex-col md:flex-row md:items-center gap-2 rounded-xl border border-border bg-surface-inset/50 p-3"
+              >
+                <div className="font-medium text-heading flex-1">{skill.skillName}</div>
+                <select
+                  value={String(skill.proficiencyLevel)}
+                  onChange={(event) => updateSkillLevel(skill.skillName, Number(event.target.value))}
+                  className="h-9 px-3 rounded-md border border-input bg-background text-sm md:w-44"
+                >
+                  {PROFICIENCY_LEVELS.map((level) => (
+                    <option key={level.value} value={String(level.value)}>
+                      {level.label} ({level.value})
+                    </option>
+                  ))}
+                </select>
+                <Button type="button" variant="ghost" onClick={() => removeSkill(skill.skillName)}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+
+            {form.skills.length === 0 ? <p className="text-sm text-faint">No skills added yet.</p> : null}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-5 flex items-center gap-2">
+            <UserCircle2 className="w-4 h-4 text-accent-primary" />
+            Profile Links
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>LinkedIn URL</Label>
+              <Input
+                type="url"
+                value={form.linkedinUrl}
+                onChange={(event) => setField("linkedinUrl", event.target.value)}
+                placeholder="https://linkedin.com/in/yourprofile"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label>GitHub URL</Label>
+              <Input
+                type="url"
+                value={form.githubUrl}
+                onChange={(event) => setField("githubUrl", event.target.value)}
+                placeholder="https://github.com/yourusername"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label>Portfolio URL</Label>
+              <Input
+                type="url"
+                value={form.portfolioUrl}
+                onChange={(event) => setField("portfolioUrl", event.target.value)}
+                placeholder="https://yourportfolio.dev"
+                className="mt-1"
+              />
+            </div>
+          </div>
+        </GlassCard>
+
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving..." : "Save All Changes"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={resetFromCurrentData} disabled={saving}>
+            Reset Changes
+          </Button>
         </div>
-      </div>
+      </form>
 
-      {/* Modal */}
-      {showModal && (
-        <ProfilePhotoModal
-          onClose={() => setShowModal(false)}
-          onSelect={(img) => setImagePreview(img)}
-        />
-      )}
+      {showModal ? (
+        <ProfilePhotoModal onClose={() => setShowModal(false)} onSelect={(image) => setImagePreview(image)} />
+      ) : null}
     </div>
   );
 }

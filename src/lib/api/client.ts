@@ -55,6 +55,10 @@ async function tryRealFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "*/*");
+  }
+
   if (auth) {
     const access = tokenStore.getAccess();
     if (access) headers.set("Authorization", `Bearer ${access}`);
