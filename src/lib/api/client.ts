@@ -2,7 +2,7 @@ import { tokenStore } from "@/lib/auth/tokenStore";
 import { API } from "./endpoints";
 import type { Tokens } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/backend";
+const BASE_URL = "/api/backend";
 
 type RefreshResponse = { accessToken?: string; refreshToken?: string; tokens?: Tokens };
 
