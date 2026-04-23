@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api/client";
 import { API } from "@/lib/api/endpoints";
-import { tokenStore } from "@/lib/auth/tokenStore";
+import { shouldEnableLocalAuthBypass, tokenStore } from "@/lib/auth/tokenStore";
 import { toast } from "sonner";
 import { ShieldCheck, Loader2, ArrowLeft } from "lucide-react";
 
@@ -18,6 +18,7 @@ type FormValues = { otp: string };
 
 export default function VerifyOtpPage() {
   const router = useRouter();
+  const canBypassOtp = shouldEnableLocalAuthBypass();
   const [email, setEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -143,6 +144,22 @@ export default function VerifyOtpPage() {
                 "Verify Code"
               )}
             </Button>
+
+            {canBypassOtp && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full h-11 rounded-xl"
+                onClick={() => {
+                  tokenStore.setLocalDevSession();
+                  localStorage.removeItem(LOGIN_EMAIL_KEY);
+                  toast.success("Local dev session started.");
+                  router.push("/jobs");
+                }}
+              >
+                Continue Locally (Skip OTP)
+              </Button>
+            )}
           </form>
 
           <div className="mt-6 flex flex-col gap-4 text-center text-sm">

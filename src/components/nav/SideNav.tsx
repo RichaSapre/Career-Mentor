@@ -59,7 +59,7 @@ export function SideNav() {
     <>
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-surface backdrop-blur-xl border-b border-border flex items-center justify-between px-4 z-50">
-        <div className="text-lg font-black text-heading">Career Mentor</div>
+        <div className="text-lg font-semibold text-heading">Career Mentor</div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
@@ -106,11 +106,11 @@ export function SideNav() {
           )}
           onClick={() => router.push('/jobs')}
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
-            <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-heading to-muted tracking-tighter transition-all whitespace-nowrap">
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-heading to-muted tracking-tighter transition-all whitespace-nowrap">
               Career Mentor
             </h1>
           )}
@@ -140,7 +140,7 @@ export function SideNav() {
                   isCollapsed ? "w-6 h-6" : "w-5 h-5",
                   isActive ? "text-white" : "text-faint group-hover:text-accent-primary"
                 )} />
-                {!isCollapsed && <span className="font-black text-sm">{item.label}</span>}
+                {!isCollapsed && <span className="font-semibold text-sm">{item.label}</span>}
                 {isActive && !isCollapsed && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />
                 )}
@@ -157,7 +157,7 @@ export function SideNav() {
               setIsMobileOpen(false);
             }}
             className={cn(
-              "flex items-center w-full gap-3 rounded-xl bg-transparent px-3 py-3 text-sm font-black transition-all group",
+              "flex items-center w-full gap-3 rounded-xl bg-transparent px-3 py-3 text-sm font-semibold transition-all group",
               path === "/profile"
                 ? "text-accent-primary"
                 : "text-muted hover:bg-surface-hover hover:text-heading",
@@ -175,7 +175,7 @@ export function SideNav() {
           <button
             onClick={signOut}
             className={cn(
-              "flex items-center gap-3 w-full rounded-xl bg-surface-inset px-3 py-3 text-sm font-black hover:bg-surface-hover transition-all text-muted hover:text-heading group",
+              "flex items-center gap-3 w-full rounded-xl bg-surface-inset px-3 py-3 text-sm font-semibold hover:bg-surface-hover transition-all text-muted hover:text-heading group",
               isCollapsed && "justify-center px-0"
             )}
             title={isCollapsed ? "Sign out" : ""}

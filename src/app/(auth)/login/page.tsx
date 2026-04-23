@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api/client";
 import { API } from "@/lib/api/endpoints";
+import { shouldEnableLocalAuthBypass, tokenStore } from "@/lib/auth/tokenStore";
 import { toast } from "sonner";
 import { Mail, ArrowRight, Loader2 } from "lucide-react";
 
@@ -19,6 +20,7 @@ type FormValues = { email: string };
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const canBypassOtp = shouldEnableLocalAuthBypass();
 
   const {
     register,
@@ -107,6 +109,22 @@ export default function LoginPage() {
                 </>
               )}
             </Button>
+
+            {canBypassOtp && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-11 rounded-xl"
+                onClick={() => {
+                  tokenStore.setLocalDevSession();
+                  localStorage.removeItem(LOGIN_EMAIL_KEY);
+                  toast.success("Local dev session started.");
+                  router.push("/jobs");
+                }}
+              >
+                Continue Locally (Skip OTP)
+              </Button>
+            )}
           </form>
 
           {/* Register link */}

@@ -238,6 +238,7 @@ export default function CareerPlanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<CareerPlanResponse["recommendation"] | null>(null);
+  const [showFullExecutiveSummary, setShowFullExecutiveSummary] = useState(false);
 
   // Multi-select state
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -302,6 +303,7 @@ export default function CareerPlanPage() {
       const payload = res?.data?.recommendation || res?.recommendation;
       if (payload) {
         setPlan(payload);
+        setShowFullExecutiveSummary(false);
       } else {
         throw new Error("Invalid format received from API");
       }
@@ -459,14 +461,37 @@ export default function CareerPlanPage() {
 
       {plan && (
         <div className="space-y-10 animate-fade-in">
-          
-          {/* Executive Summary */}
-          <GlassCard className="p-8 border-l-4 border-l-accent-primary shadow-elevated">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-4">Executive Summary</h2>
-            <div className="text-body text-base leading-relaxed whitespace-pre-wrap">
-              {removeExecutiveSummaryHeading(plan.executiveSummary)}
-            </div>
-          </GlassCard>
+          {(() => {
+            const executiveSummary = removeExecutiveSummaryHeading(plan.executiveSummary);
+            const executiveSummaryParagraphs = executiveSummary
+              .split(/\n\s*\n/)
+              .map((paragraph) => paragraph.trim())
+              .filter(Boolean);
+            const hasMoreExecutiveSummary = executiveSummaryParagraphs.length > 1;
+            const executiveSummaryPreview = executiveSummaryParagraphs[0] ?? executiveSummary;
+
+            return (
+              <>
+                {/* Executive Summary */}
+                <GlassCard className="p-8 border-l-4 border-l-accent-primary shadow-elevated">
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-faint mb-4">Executive Summary</h2>
+                  <div className="text-body text-base leading-relaxed whitespace-pre-wrap">
+                    {showFullExecutiveSummary ? executiveSummary : executiveSummaryPreview}
+                  </div>
+
+                  {hasMoreExecutiveSummary && (
+                    <button
+                      type="button"
+                      onClick={() => setShowFullExecutiveSummary((prev) => !prev)}
+                      className="mt-4 text-sm font-semibold text-accent-primary hover:opacity-80 transition-opacity"
+                    >
+                      {showFullExecutiveSummary ? "Read less" : "Read more"}
+                    </button>
+                  )}
+                </GlassCard>
+              </>
+            );
+          })()}
 
           {/* Quick Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

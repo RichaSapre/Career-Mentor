@@ -36,8 +36,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggle className="shadow-elevated scale-110" />
       </div>
 
-      <main className="flex-1 p-6 md:p-8 pt-20 md:pt-8 overflow-y-auto w-full">
-        <div className="w-full flex flex-col gap-6">{children}</div>
+      <main className="flex-1 pt-20 md:pt-10 px-4 pb-8 md:px-8 md:pb-10 overflow-y-auto w-full">
+        <div className="mx-auto w-full max-w-[1200px] flex flex-col gap-8">{children}</div>
       </main>
     </div>
   );

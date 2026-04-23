@@ -1,6 +1,19 @@
 const ACCESS = "cm_access";
 const REFRESH = "cm_refresh";
 export const LOGIN_EMAIL_KEY = "cm_login_email";
+const DEV_ACCESS = "local-dev-access";
+const DEV_REFRESH = "local-dev-refresh";
+
+export function shouldEnableLocalAuthBypass(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const fromEnv = process.env.NEXT_PUBLIC_LOCAL_AUTH_BYPASS === "true";
+  const isLocalHost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
+  return fromEnv || (process.env.NODE_ENV === "development" && isLocalHost);
+}
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -34,6 +47,11 @@ export const tokenStore = {
     if (typeof window === "undefined") return;
     setCookie(ACCESS, tokens.accessToken, 7);
     setCookie(REFRESH, tokens.refreshToken, 30);
+  },
+  setLocalDevSession() {
+    if (typeof window === "undefined") return;
+    setCookie(ACCESS, DEV_ACCESS, 1);
+    setCookie(REFRESH, DEV_REFRESH, 1);
   },
   clear() {
     if (typeof window === "undefined") return;

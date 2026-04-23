@@ -1,4 +1,4 @@
-import type { Experience, Skill, SalaryRange } from "@/lib/api/types";
+import type { Education, Experience, Skill, SalaryRange } from "@/lib/api/types";
 
 export type SignupDraft = {
   fullName?: string;
@@ -12,6 +12,7 @@ export type SignupDraft = {
   university?: string;
   graduationDate?: string;
   gpa?: number;
+  educations?: Education[];
 
   // Citizenship & Sponsorship
   citizenshipStatus?: string;

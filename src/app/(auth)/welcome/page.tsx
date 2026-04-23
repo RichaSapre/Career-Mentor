@@ -116,7 +116,7 @@ export default function WelcomePage() {
 
           <Link
             href="/market"
-            className="relative z-10 w-full sm:w-auto px-6 py-4 rounded-xl bg-zinc-900 dark:bg-zinc-900 border border-border text-zinc-300 font-bold hover:text-accent-primary hover:border-border-hover transition-all flex items-center justify-center gap-2 shadow-lg"
+            className="relative z-10 w-full sm:w-auto px-6 py-4 rounded-xl bg-btn-secondary-bg border border-btn-secondary-border text-btn-secondary-text font-semibold hover:text-accent-primary hover:border-border-hover hover:bg-btn-secondary-hover transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             <Compass className="w-4 h-4" />
             Explore Trends

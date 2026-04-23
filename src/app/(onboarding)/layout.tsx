@@ -20,8 +20,8 @@ export default function OnboardingLayout({
   const idx = steps.findIndex((s) => s.href === pathname);
 
   return (
-    <main className="bg-gradient-soft min-h-screen px-5 py-10">
-      <div className="mx-auto max-w-lg">
+    <main className="bg-gradient-soft min-h-screen px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-xl rounded-3xl border border-border bg-surface/80 p-5 shadow-card backdrop-blur-xl sm:p-7">
         <div className="mb-6">
           <div className="text-xs text-muted">Onboarding</div>
           <div className="mt-1 flex items-center gap-2">

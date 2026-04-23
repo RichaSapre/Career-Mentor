@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMe } from "@/features/auth/hooks";
-import type { Experience, UserProfile } from "@/lib/api/types";
+import type { Education, Experience, UserProfile } from "@/lib/api/types";
 import { signupDraft } from "@/lib/auth/signupDraft";
 import { apiFetch } from "@/lib/api/client";
 import { API } from "@/lib/api/endpoints";
@@ -46,14 +46,18 @@ type ExperienceFormItem = {
   isCurrent: boolean;
 };
 
-type ProfileFormState = {
-  fullName: string;
-  email: string;
+type EducationFormItem = {
   degreeLevel: string;
   major: string;
   university: string;
   graduationDate: string;
   gpa: string;
+};
+
+type ProfileFormState = {
+  fullName: string;
+  email: string;
+  educations: EducationFormItem[];
   citizenshipStatus: string;
   needsSponsorship: boolean;
   targetRoles: string[];
@@ -107,15 +111,21 @@ function emptyExperience(): ExperienceFormItem {
   };
 }
 
-function emptyForm(): ProfileFormState {
+function emptyEducation(): EducationFormItem {
   return {
-    fullName: "",
-    email: "",
     degreeLevel: "",
     major: "",
     university: "",
     graduationDate: "",
     gpa: "",
+  };
+}
+
+function emptyForm(): ProfileFormState {
+  return {
+    fullName: "",
+    email: "",
+    educations: [emptyEducation()],
     citizenshipStatus: "",
     needsSponsorship: false,
     targetRoles: [],
@@ -239,9 +249,56 @@ function normalizeExperiences(values: unknown): ExperienceFormItem[] {
     .filter((item): item is ExperienceFormItem => item !== null);
 }
 
+function normalizeEducations(values: unknown): EducationFormItem[] {
+  if (!Array.isArray(values)) return [];
+
+  return values
+    .map((raw) => {
+      if (!raw || typeof raw !== "object") return null;
+
+      const edu = raw as Record<string, unknown>;
+      const gpaValue = typeof edu.gpa === "number" ? String(edu.gpa) : pickString(edu.gpa);
+
+      return {
+        degreeLevel: pickString(edu.degreeLevel, edu.degree_level).trim(),
+        major: pickString(edu.major).trim(),
+        university: pickString(edu.university).trim(),
+        graduationDate: pickString(edu.graduationDate, edu.graduation_date),
+        gpa: gpaValue.trim(),
+      };
+    })
+    .filter((item): item is EducationFormItem => item !== null)
+    .filter(
+      (item) =>
+        item.degreeLevel || item.major || item.university || item.graduationDate || item.gpa
+    );
+}
+
 function createFormState(user?: UserProfile): ProfileFormState {
   const draft = signupDraft.get();
   const userRecord = (user ?? {}) as Record<string, unknown>;
+
+  const sourceEducations =
+    normalizeEducations(userRecord.educations ?? draft.educations ?? []).length > 0
+      ? normalizeEducations(userRecord.educations ?? draft.educations ?? [])
+      : [
+          {
+            degreeLevel: pickString(user?.degreeLevel, userRecord.degree_level, draft.degreeLevel),
+            major: pickString(user?.major, userRecord.major, draft.major),
+            university: pickString(user?.university, userRecord.university, draft.university),
+            graduationDate: pickString(
+              user?.graduationDate,
+              userRecord.graduation_date,
+              draft.graduationDate
+            ),
+            gpa:
+              user?.gpa != null
+                ? String(user.gpa)
+                : draft.gpa != null
+                  ? String(draft.gpa)
+                  : "",
+          },
+        ];
 
   const salaryRange =
     user?.salaryRange ??
@@ -263,15 +320,7 @@ function createFormState(user?: UserProfile): ProfileFormState {
   return {
     fullName: pickString(user?.fullName, userRecord.full_name, draft.fullName),
     email: pickString(user?.email, userRecord.email, draft.email),
-    degreeLevel: pickString(user?.degreeLevel, userRecord.degree_level, draft.degreeLevel),
-    major: pickString(user?.major, userRecord.major, draft.major),
-    university: pickString(user?.university, userRecord.university, draft.university),
-    graduationDate: pickString(
-      user?.graduationDate,
-      userRecord.graduation_date,
-      draft.graduationDate
-    ),
-    gpa: user?.gpa != null ? String(user.gpa) : draft.gpa != null ? String(draft.gpa) : "",
+    educations: sourceEducations.length ? sourceEducations : [emptyEducation()],
     citizenshipStatus: pickString(
       user?.citizenshipStatus,
       userRecord.citizenship_status,
@@ -452,6 +501,31 @@ export default function ProfilePage() {
     });
   }
 
+  function addEducation() {
+    setForm((prev) => ({
+      ...prev,
+      educations: [...prev.educations, emptyEducation()],
+    }));
+  }
+
+  function removeEducation(index: number) {
+    setForm((prev) => {
+      const next = prev.educations.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        educations: next.length ? next : [emptyEducation()],
+      };
+    });
+  }
+
+  function updateEducation(index: number, patch: Partial<EducationFormItem>) {
+    setForm((prev) => {
+      const next = [...prev.educations];
+      next[index] = { ...next[index], ...patch };
+      return { ...prev, educations: next };
+    });
+  }
+
   function resetFromCurrentData() {
     setForm(createFormState(user));
     setError("");
@@ -485,11 +559,55 @@ export default function ProfilePage() {
       return;
     }
 
-    const gpaValue = form.gpa.trim() ? Number(form.gpa) : undefined;
-    if (gpaValue !== undefined && (Number.isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4)) {
-      setError("GPA must be between 0 and 4.");
+    let educationValidationError = "";
+    const normalizedEducations = form.educations.reduce<Education[]>((acc, education) => {
+      const degreeLevel = education.degreeLevel.trim();
+      const major = education.major.trim();
+      const university = education.university.trim();
+      const graduationDate = education.graduationDate.trim();
+
+      const hasAnyValue =
+        degreeLevel || major || university || graduationDate || education.gpa.trim();
+      if (!hasAnyValue) return acc;
+
+      if (!degreeLevel || !major || !university) {
+        educationValidationError = "Each education entry must include degree level, major, and university.";
+        return acc;
+      }
+
+      const mapped: Education = {
+        degreeLevel,
+        major,
+        university,
+      };
+
+      if (graduationDate) mapped.graduationDate = graduationDate;
+
+      const gpaRaw = education.gpa.trim();
+      if (gpaRaw) {
+        const gpaValue = Number(gpaRaw);
+        if (Number.isNaN(gpaValue) || gpaValue < 0 || gpaValue > 4) {
+          educationValidationError = "Each education GPA must be between 0 and 4.";
+          return acc;
+        }
+        mapped.gpa = gpaValue;
+      }
+
+      acc.push(mapped);
+      return acc;
+    }, []);
+
+    if (educationValidationError) {
+      setError(educationValidationError);
       return;
     }
+
+    if (!normalizedEducations.length) {
+      setError("Please add at least one education entry.");
+      return;
+    }
+
+    const primaryEducation = normalizedEducations[0];
 
     const hasSalaryMin = form.salaryMin.trim().length > 0;
     const hasSalaryMax = form.salaryMax.trim().length > 0;
@@ -571,11 +689,12 @@ export default function ProfilePage() {
     const payload: Record<string, unknown> = {
       fullName: form.fullName.trim() || undefined,
       email: form.email.trim() || undefined,
-      degreeLevel: form.degreeLevel || undefined,
-      major: form.major.trim() || undefined,
-      university: form.university.trim() || undefined,
-      graduationDate: form.graduationDate || undefined,
-      gpa: gpaValue,
+      degreeLevel: primaryEducation.degreeLevel,
+      major: primaryEducation.major,
+      university: primaryEducation.university,
+      graduationDate: primaryEducation.graduationDate,
+      gpa: primaryEducation.gpa,
+      educations: normalizedEducations,
       citizenshipStatus: form.citizenshipStatus || undefined,
       needsSponsorship: form.needsSponsorship,
       targetRoles: normalizedRoles,
@@ -603,11 +722,12 @@ export default function ProfilePage() {
       signupDraft.set({
         fullName: form.fullName.trim() || undefined,
         email: form.email.trim() || undefined,
-        degreeLevel: form.degreeLevel || undefined,
-        major: form.major.trim() || undefined,
-        university: form.university.trim() || undefined,
-        graduationDate: form.graduationDate || undefined,
-        gpa: gpaValue,
+        degreeLevel: primaryEducation.degreeLevel,
+        major: primaryEducation.major,
+        university: primaryEducation.university,
+        graduationDate: primaryEducation.graduationDate,
+        gpa: primaryEducation.gpa,
+        educations: normalizedEducations,
         citizenshipStatus: form.citizenshipStatus || undefined,
         needsSponsorship: form.needsSponsorship,
         targetRoles: normalizedRoles,
@@ -741,72 +861,98 @@ export default function ProfilePage() {
             Education
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Degree Level *</Label>
-              <select
-                value={form.degreeLevel}
-                onChange={(event) => setField("degreeLevel", event.target.value)}
-                className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
-                required
+          <div className="space-y-4">
+            {form.educations.map((education, index) => (
+              <div
+                key={`education-${index}`}
+                className="rounded-xl border border-border p-4 bg-surface-inset/50"
               >
-                <option value="">Select degree level</option>
-                {DEGREE_LEVELS.map((degreeLevel) => (
-                  <option key={degreeLevel} value={degreeLevel}>
-                    {degreeLevel}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-semibold text-heading">Education {index + 1}</p>
+                  <Button type="button" variant="ghost" onClick={() => removeEducation(index)}>
+                    Remove
+                  </Button>
+                </div>
 
-            <div>
-              <Label>Major / Concentration *</Label>
-              <Input
-                value={form.major}
-                onChange={(event) => setField("major", event.target.value)}
-                list="major-options"
-                placeholder="Computer Science"
-                className="mt-1"
-                required
-              />
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Degree Level *</Label>
+                    <select
+                      value={education.degreeLevel}
+                      onChange={(event) =>
+                        updateEducation(index, { degreeLevel: event.target.value })
+                      }
+                      className="w-full mt-1 h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      required={index === 0}
+                    >
+                      <option value="">Select degree level</option>
+                      {DEGREE_LEVELS.map((degreeLevel) => (
+                        <option key={degreeLevel} value={degreeLevel}>
+                          {degreeLevel}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-            <div>
-              <Label>University *</Label>
-              <Input
-                value={form.university}
-                onChange={(event) => setField("university", event.target.value)}
-                list="university-options"
-                placeholder="Stanford University"
-                className="mt-1"
-                required
-              />
-            </div>
+                  <div>
+                    <Label>Major / Concentration *</Label>
+                    <Input
+                      value={education.major}
+                      onChange={(event) => updateEducation(index, { major: event.target.value })}
+                      list="major-options"
+                      placeholder="Computer Science"
+                      className="mt-1"
+                      required={index === 0}
+                    />
+                  </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Graduation Date</Label>
-                <Input
-                  type="date"
-                  value={form.graduationDate}
-                  onChange={(event) => setField("graduationDate", event.target.value)}
-                  className="mt-1"
-                />
+                  <div>
+                    <Label>University *</Label>
+                    <Input
+                      value={education.university}
+                      onChange={(event) =>
+                        updateEducation(index, { university: event.target.value })
+                      }
+                      list="university-options"
+                      placeholder="Stanford University"
+                      className="mt-1"
+                      required={index === 0}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Graduation Date</Label>
+                      <Input
+                        type="date"
+                        value={education.graduationDate}
+                        onChange={(event) =>
+                          updateEducation(index, { graduationDate: event.target.value })
+                        }
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>GPA (0 - 4)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="4"
+                        value={education.gpa}
+                        onChange={(event) => updateEducation(index, { gpa: event.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
+            ))}
 
-              <div>
-                <Label>GPA (0 - 4)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="4"
-                  value={form.gpa}
-                  onChange={(event) => setField("gpa", event.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
+            <Button type="button" variant="secondary" onClick={addEducation}>
+              Add Education
+            </Button>
           </div>
 
           <datalist id="major-options">

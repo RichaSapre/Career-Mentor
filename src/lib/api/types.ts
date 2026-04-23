@@ -19,6 +19,14 @@ export type Experience = {
   isCurrent?: boolean;
 };
 
+export type Education = {
+  degreeLevel: string;
+  major: string;
+  university: string;
+  graduationDate?: string;
+  gpa?: number;
+};
+
 export type SalaryRange = {
   min: number;
   max: number;
@@ -36,6 +44,7 @@ export type UserProfile = {
   university?: string;
   graduationDate?: string;
   gpa?: number;
+  educations?: Education[];
 
   citizenshipStatus?: string;
   needsSponsorship?: boolean;

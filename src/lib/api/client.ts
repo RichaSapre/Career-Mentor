@@ -1,4 +1,4 @@
-import { tokenStore } from "@/lib/auth/tokenStore";
+import { shouldEnableLocalAuthBypass, tokenStore } from "@/lib/auth/tokenStore";
 import { API } from "./endpoints";
 import type { Tokens } from "./types";
 
@@ -7,6 +7,10 @@ const BASE_URL = "/api/backend";
 type RefreshResponse = { accessToken?: string; refreshToken?: string; tokens?: Tokens };
 
 async function doRefreshToken(): Promise<boolean> {
+  if (shouldEnableLocalAuthBypass()) {
+    return false;
+  }
+
   const refresh = tokenStore.getRefresh();
   if (!refresh) return false;
 

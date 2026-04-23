@@ -369,7 +369,7 @@ function MarketAnalyzerContent() {
             {/* Demand Score */}
             <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500">
+                <div className="p-2 rounded-lg bg-accent-primary/10 text-accent-primary">
                   <Zap className="w-4 h-4" />
                 </div>
                 <div className="flex items-center gap-1 text-xs font-bold text-muted">
@@ -394,7 +394,7 @@ function MarketAnalyzerContent() {
             {/* Remote Share */}
             <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
               <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500">
+                <div className="p-2 rounded-lg bg-accent-secondary/10 text-accent-secondary">
                   <Wifi className="w-4 h-4" />
                 </div>
               </div>
@@ -585,7 +585,7 @@ function MarketAnalyzerContent() {
             {/* Top Companies */}
             <GlassCard className="p-6">
               <div className="flex items-center gap-2 mb-5">
-                <Building2 className="w-4 h-4 text-violet-500" />
+                <Building2 className="w-4 h-4 text-accent-primary" />
                 <div className="text-xs font-bold uppercase tracking-widest text-faint">
                   Top Companies
                 </div>
@@ -597,14 +597,14 @@ function MarketAnalyzerContent() {
                     className="flex items-center justify-between p-3 rounded-xl bg-surface-inset hover:bg-surface-hover transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-500 text-xs font-bold">
+                      <div className="w-8 h-8 rounded-lg bg-accent-primary/10 flex items-center justify-center text-accent-primary text-xs font-bold">
                         {idx + 1}
                       </div>
                       <span className="text-sm font-medium text-body">
                         {c.company}
                       </span>
                     </div>
-                    <span className="text-xs font-bold text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-full">
                       {c.count}
                     </span>
                   </div>
