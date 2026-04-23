@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 const PREVIEW_URL =
   process.env.PUBLIC_MARKET_PREVIEW_URL ??
-  "http://34.61.102.74:3000/alpha/api/v1/market/analyze/preview";
+  "https://34.61.102.74:3000/alpha/api/v1/market/analyze/preview";
 
 export async function POST(req: NextRequest) {
   try {
