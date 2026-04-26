@@ -27,6 +27,7 @@ import { TECH_SKILLS } from "@/lib/data/techSkills";
 import { USA_LOCATIONS } from "@/lib/data/usaLocations";
 import { USA_UNIVERSITIES } from "@/lib/data/usaUniversities";
 import { Briefcase, Code, GraduationCap, Loader2, UserCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 type SkillFormItem = {
   skillName: string;
@@ -537,25 +538,30 @@ export default function ProfilePage() {
     setError("");
     setSuccess("");
 
+    const failWith = (message: string) => {
+      setError(message);
+      toast.error("Unable to save", { description: message });
+    };
+
     if (!form.citizenshipStatus) {
-      setError("Please select citizenship/work authorization status.");
+      failWith("Please select citizenship/work authorization status.");
       return;
     }
 
     if (!form.remotePreference) {
-      setError("Please select a remote preference.");
+      failWith("Please select a remote preference.");
       return;
     }
 
     const normalizedRoles = normalizeStringArray(form.targetRoles);
     if (!normalizedRoles.length) {
-      setError("Please add at least one target role.");
+      failWith("Please add at least one target role.");
       return;
     }
 
     const normalizedLocations = normalizeStringArray(form.preferredLocations);
     if (!normalizedLocations.length) {
-      setError("Please add at least one preferred location.");
+      failWith("Please add at least one preferred location.");
       return;
     }
 
@@ -598,12 +604,12 @@ export default function ProfilePage() {
     }, []);
 
     if (educationValidationError) {
-      setError(educationValidationError);
+      failWith(educationValidationError);
       return;
     }
 
     if (!normalizedEducations.length) {
-      setError("Please add at least one education entry.");
+      failWith("Please add at least one education entry.");
       return;
     }
 
@@ -612,7 +618,7 @@ export default function ProfilePage() {
     const hasSalaryMin = form.salaryMin.trim().length > 0;
     const hasSalaryMax = form.salaryMax.trim().length > 0;
     if (hasSalaryMin !== hasSalaryMax) {
-      setError("Please provide both salary minimum and salary maximum.");
+      failWith("Please provide both salary minimum and salary maximum.");
       return;
     }
 
@@ -629,12 +635,12 @@ export default function ProfilePage() {
       const max = Number(form.salaryMax);
 
       if (Number.isNaN(min) || Number.isNaN(max)) {
-        setError("Salary values must be valid numbers.");
+        failWith("Salary values must be valid numbers.");
         return;
       }
 
       if (min > max) {
-        setError("Salary minimum cannot be greater than salary maximum.");
+        failWith("Salary minimum cannot be greater than salary maximum.");
         return;
       }
 
@@ -746,8 +752,11 @@ export default function ProfilePage() {
 
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       setSuccess("Profile updated successfully.");
+      toast.success("Saved successfully");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update profile.");
+      const message = err instanceof Error ? err.message : "Failed to update profile.";
+      setError(message);
+      toast.error("Unable to save", { description: message });
     } finally {
       setSaving(false);
     }
@@ -769,6 +778,8 @@ export default function ProfilePage() {
             <div className="relative shrink-0">
               <div className="w-28 h-28 rounded-full bg-surface border-4 border-surface shadow-elevated overflow-hidden">
                 {imagePreview ? (
+                  // imagePreview can be a user-uploaded data URL, which is better handled by a raw img tag.
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <div className="h-full flex items-center justify-center text-faint text-sm bg-surface-inset">
@@ -1497,13 +1508,19 @@ export default function ProfilePage() {
           </div>
         </GlassCard>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save All Changes"}
           </Button>
           <Button type="button" variant="ghost" onClick={resetFromCurrentData} disabled={saving}>
             Reset Changes
           </Button>
+          {success ? (
+            <span className="text-sm text-emerald-400">{success}</span>
+          ) : null}
+          {error ? (
+            <span className="text-sm text-red-400">{error}</span>
+          ) : null}
         </div>
       </form>
 
