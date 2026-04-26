@@ -18,7 +18,6 @@ import {
   Briefcase,
   DollarSign,
   BarChart3,
-  Wifi,
   Brain,
   MapPin,
   Building2,
@@ -329,7 +328,7 @@ function MarketAnalyzerContent() {
       {data && (
         <>
           {/* ── HERO METRICS ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Total Jobs */}
             <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
               <div className="flex items-center justify-between mb-3">
@@ -391,20 +390,6 @@ function MarketAnalyzerContent() {
               </div>
             </GlassCard>
 
-            {/* Remote Share */}
-            <GlassCard className="flex flex-col justify-between hover:border-border-hover transition-all p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-lg bg-accent-secondary/10 text-accent-secondary">
-                  <Wifi className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-3xl font-black text-heading tracking-tight">
-                {Math.round(data.remoteShare)}%
-              </div>
-              <div className="text-xs text-faint font-medium mt-1 uppercase tracking-wider">
-                Remote Share
-              </div>
-            </GlassCard>
           </div>
           {/* ── AI ANALYSIS ── */}
           {data.aiAnalysis && (

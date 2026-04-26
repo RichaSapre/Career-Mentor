@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { signupDraft } from "@/lib/auth/signupDraft";
 
 type Props = {
@@ -73,16 +74,24 @@ export default function ProfilePhotoModal({ onClose, onSelect }: Props) {
 
           <div className="flex gap-4">
             {AVATARS.map((avatar) => (
-              <img
+              <button
                 key={avatar}
-                src={avatar}
-                className="w-16 h-16 rounded-full cursor-pointer hover:scale-110 transition border border-border"
+                type="button"
+                className="w-16 h-16 rounded-full overflow-hidden cursor-pointer hover:scale-110 transition border border-border"
                 onClick={() => {
                   signupDraft.set({ profilePhoto: avatar });
                   onSelect(avatar);
                   onClose();
                 }}
-              />
+              >
+                <Image
+                  src={avatar}
+                  alt="Avatar option"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 object-cover"
+                />
+              </button>
             ))}
           </div>
         </div>
