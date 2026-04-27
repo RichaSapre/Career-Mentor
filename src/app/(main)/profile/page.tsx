@@ -264,7 +264,7 @@ function normalizeEducations(values: unknown): EducationFormItem[] {
         degreeLevel: pickString(edu.degreeLevel, edu.degree_level).trim(),
         major: pickString(edu.major).trim(),
         university: pickString(edu.university).trim(),
-        graduationDate: pickString(edu.graduationDate, edu.graduation_date),
+        graduationDate: pickString(edu.graduationDate, edu.graduation_date).split("T")[0],
         gpa: gpaValue.trim(),
       };
     })
@@ -291,7 +291,7 @@ function createFormState(user?: UserProfile): ProfileFormState {
               user?.graduationDate,
               userRecord.graduation_date,
               draft.graduationDate
-            ),
+            ).split("T")[0],
             gpa:
               user?.gpa != null
                 ? String(user.gpa)
