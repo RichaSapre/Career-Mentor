@@ -36,7 +36,10 @@ type JobsFormState = {
 
 const LIMIT_OPTIONS = [10, 20, 50];
 const JOB_TYPE_OPTIONS = ["internship", "fellowship", "co-op", "apprenticeship"];
-const SCHEDULE_OPTIONS = ["Full time", "Part time"];
+const SCHEDULE_OPTIONS: { value: string; label: string }[] = [
+  { value: "fulltime", label: "Full time" },
+  { value: "parttime", label: "Part time" },
+];
 const DESCRIPTION_PREVIEW_LIMIT = 280;
 
 const DEFAULT_FORM: JobsFormState = {
@@ -263,8 +266,8 @@ export default function JobsPage() {
             <SelectContent>
               <SelectItem value="any">All</SelectItem>
               {SCHEDULE_OPTIONS.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
