@@ -64,7 +64,7 @@ async function proxyRequest(req: NextRequest, { params }: { params: { path: stri
     });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: "Proxy fetch error", error: err.message },
+      { success: false, message: "Proxy fetch error", error: err.message, attemptedUrl: backendUrl },
       { status: 502 }
     );
   }
