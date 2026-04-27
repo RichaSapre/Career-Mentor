@@ -29,18 +29,21 @@ type JobsFormState = {
   search: string;
   location: string;
   jobType: string;
+  schedule: string;
   isRemote: "any" | "true" | "false";
   salarySort: "default" | "asc" | "desc";
 };
 
 const LIMIT_OPTIONS = [10, 20, 50];
 const JOB_TYPE_OPTIONS = ["internship", "fellowship", "co-op", "apprenticeship"];
+const SCHEDULE_OPTIONS = ["Full time", "Part time"];
 const DESCRIPTION_PREVIEW_LIMIT = 280;
 
 const DEFAULT_FORM: JobsFormState = {
   search: "",
   location: "",
   jobType: "",
+  schedule: "",
   isRemote: "any",
   salarySort: "default",
 };
@@ -140,12 +143,13 @@ export default function JobsPage() {
   }, []);
 
   const applyFilters = useCallback(() => {
+    const jobTypeParts = [form.jobType.trim(), form.schedule.trim()].filter(Boolean);
     setFilters((prev) => ({
       page: 1,
       limit: prev.limit ?? 20,
       search: form.search.trim() || undefined,
       location: form.location.trim() || undefined,
-      jobType: form.jobType.trim() || undefined,
+      jobType: jobTypeParts.length > 0 ? jobTypeParts.join(",") : undefined,
       isRemote:
         form.isRemote === "any"
           ? undefined
@@ -174,6 +178,7 @@ export default function JobsPage() {
     if (form.search.trim()) count += 1;
     if (form.location.trim()) count += 1;
     if (form.jobType.trim()) count += 1;
+    if (form.schedule.trim()) count += 1;
     if (form.isRemote !== "any") count += 1;
     if (form.salarySort !== "default") count += 1;
     return count;
@@ -211,7 +216,7 @@ export default function JobsPage() {
       </div>
 
       <GlassCard className="space-y-5">
-        <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-3">
+        <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-faint absolute left-3 top-1/2 -translate-y-1/2" />
             <Input
@@ -241,6 +246,23 @@ export default function JobsPage() {
             <SelectContent>
               <SelectItem value="any">All type</SelectItem>
               {JOB_TYPE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={form.schedule || "any"}
+            onValueChange={(value) => updateForm("schedule", value === "any" ? "" : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Schedule" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">All</SelectItem>
+              {SCHEDULE_OPTIONS.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
                 </SelectItem>
