@@ -1,16 +1,3 @@
-Here is a **direct copy-paste README.md** with:
-
-* Clean architecture diagram
-* Local setup instructions
-* Environment variable documentation
-* Academic research framing
-* Backend endpoints section included
-* Backend repo link
-
-You can replace your entire `README.md` with this.
-
----
-
 ```markdown
 # Career Mentor – Frontend  
 ### AI-Powered Career Decision Support System
