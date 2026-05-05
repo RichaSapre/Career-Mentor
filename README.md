@@ -188,3 +188,17 @@ src/
 ---
 
 ## 🚀 Future Improvements
+
+Based on structured user feedback and platform testing, several potential improvements have been identified for future iterations of Career Mentor.
+
+One key enhancement involves integrating real-time job listings instead of periodically updated curated roles. This would allow dynamic filtering and more accurate market alignment. Additionally, the skill-gap analysis can be expanded to categorize missing skills by priority level and recommend specific learning resources or certifications, enabling students to follow a structured upskilling path.
+
+For international students, a dedicated support layer could be introduced, including sponsorship likelihood indicators, visa-specific filtering, and employer sponsorship probability scoring. This would address one of the most common pain points identified during feedback collection.
+
+The platform can also evolve to support multi-role comparison, allowing students to evaluate different career paths side-by-side in terms of demand, competitiveness, salary growth, and long-term trajectory. Salary analytics may be further refined to normalize compensation across hourly and yearly formats, adjust for geographic cost-of-living differences, and present percentile-based comparisons.
+
+From a technical perspective, the multi-agent reasoning system can be enhanced by incorporating adaptive weighting, confidence calibration, and structured reasoning transparency to improve explainability. Over time, longitudinal dashboards could be introduced to track user skill growth, market alignment progression, and application response patterns.
+
+Future research directions may explore bias detection within market-driven recommendations, quantitative validation of the multi-agent system’s effectiveness, and long-term impact on student decision confidence.
+
+These future implementations aim to transition Career Mentor from a functional academic prototype into a scalable, research-driven intelligent career decision support system.
