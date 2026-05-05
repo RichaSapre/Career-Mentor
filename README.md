@@ -100,7 +100,7 @@ BACKEND_URL=http://localhost:4300/api/backend
 
 This frontend connects to the **Career Mentor Backend API**.
 
-👉 **Backend Repository:** [Add Your Backend Repo Link Here]
+👉 **Backend Repository:** [Career Mentor Backend](https://github.com/ishreyakumari97/Capstone-backend)
 
 ### 🔗 API Reference
 
