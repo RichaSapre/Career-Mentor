@@ -1,234 +1,328 @@
-📘 Career Mentor – Frontend
-AI-Powered Career Decision Support System
-📌 Overview
+Here is a **direct copy-paste README.md** with:
 
-Career Mentor is an AI-driven career guidance platform developed as part of a Capstone Project by Richa Sapre & Shreya Kumari, under the supervision of Prof. Hongmin Li.
+* Clean architecture diagram
+* Local setup instructions
+* Environment variable documentation
+* Academic research framing
+* Backend endpoints section included
+* Backend repo link
 
-The system is designed to address a key problem in modern job search:
+You can replace your entire `README.md` with this.
 
-Students often make career decisions based on incomplete information about market demand, skill relevance, and competitiveness.
+---
 
-Career Mentor integrates structured labor market analysis, multi-agent reasoning, and personalized profile evaluation to provide transparent, data-driven career insights.
+```markdown
+# Career Mentor – Frontend  
+### AI-Powered Career Decision Support System
 
-This repository contains the complete frontend system, built using Next.js and deployed on Vercel.
+## Overview
 
-🎯 Research Objectives
+Career Mentor is an AI-powered career guidance platform developed as part of a Capstone Project by **Richa Sapre & Shreya Kumari**, under the guidance of **Prof. Hongmin Li**.
 
-The project explores:
+The system is designed to help students make data-driven career decisions by combining:
 
-Explainable AI in career recommendation systems
-Multi-agent structured reasoning
-Market-informed decision support
-Skill-gap identification frameworks
-Data-driven student career planning
+- Labor market trend analysis  
+- Multi-agent AI reasoning  
+- Personalized skill-gap assessment  
+- Structured job discovery  
+- Explainable career recommendations  
 
-The goal is not to replace job boards, but to enhance decision-making clarity through structured analysis.
+This repository contains the complete frontend application built with Next.js and deployed on Vercel.
 
-🏗️ System Architecture
-High-Level Architecture
+---
 
+## Live Application
 
-┌────────────────────────────┐
-│        User Interface       │
-│     (Next.js Frontend)      │
-└───────────────┬────────────┘
-                │
-                ▼
-┌────────────────────────────┐
-│ Next.js Proxy Route Layer  │
-│  /api/backend/[...path]    │
-└───────────────┬────────────┘
-                │
-                ▼
-┌────────────────────────────┐
-│    Backend API Server      │
-│  Market + AI + Auth Logic  │
-└───────────────┬────────────┘
-                │
-                ▼
-┌────────────────────────────┐
-│   External Data Sources    │
-│ Job Listings + Market Data │
-└────────────────────────────┘
+👉 https://career-mentor-alpha.vercel.app
 
-Frontend Layer Responsibilities
-User authentication (OTP-based)
-Profile onboarding & management
-Job search & filtering interface
-Market analysis visualization
-Career plan rendering (multi-agent output)
-Proxy-based secure backend communication
+---
 
+## System Architecture
 
-Backend Communication Flow
-Browser
-   ↓
-/api/backend/auth/login
-   ↓
-Next.js Route Handler
-   ↓
-Production Backend URL
-   ↓
-AI + Database + Market Analysis Engine
+### High-Level Architecture
 
-The proxy architecture eliminates CORS issues and avoids direct exposure of backend endpoints.
+```
 
+User (Browser)
+↓
+Next.js Frontend (App Router)
+↓
+Next.js Proxy Route (/api/backend/[...path])
+↓
+Backend Server (AI + Auth + Market Engine)
+↓
+Database + External Job Data
 
+```
 
-🧩 Core Frontend Modules
-1️⃣ Job Search
-Filter-based job discovery
-Salary parsing & normalization
-External job application redirection
-2️⃣ Market Analyzer
-Public preview analysis
-Demand score computation
-Growth trend visualization
-Top skills & companies
-AI-generated summaries
-3️⃣ Career Plan
-Multi-agent structured reasoning (6 agents)
-Skill alignment analysis
-Gap detection
-Confidence scoring
-Actionable recommendations
-4️⃣ Profile System
-Step-by-step onboarding
-Education & experience capture
-Skills tagging
-Editable user dashboard
-🧠 Multi-Agent Reasoning Model (Frontend Integration)
+---
 
-The Career Plan system renders structured outputs from six conceptual agents:
+### Proxy-Based Backend Communication
 
-Market Demand Agent
-Skill Alignment Agent
-Competition Agent
-Education & Experience Agent
-Strategy Agent
-Synthesis Agent
+The frontend does NOT directly call backend IP addresses.
 
-Each agent contributes to a transparent, explainable recommendation system.
+All requests go through:
 
-🛠️ Tech Stack
-Framework
-Next.js 14 (App Router)
-TypeScript
-UI & Styling
-Tailwind CSS
-Custom Glass UI Components
-Radix UI
-Recharts (Data Visualization)
-State & Architecture
-React Hooks
-Modular API abstraction layer
-Token-based authentication handling
-Next.js Route Handlers (Serverless proxy)
-Deployment
-Vercel (Frontend Hosting)
-Serverless proxy endpoints
+```
 
+/api/backend/[...path]
 
-📂 Project Structure
+```
+
+The proxy route forwards requests to the backend using the `BACKEND_URL` environment variable.
+
+This architecture:
+
+- Prevents CORS issues  
+- Avoids mixed-content errors  
+- Hides backend implementation details  
+- Supports secure deployment on Vercel  
+
+---
+
+## Core Features
+
+### 1️⃣ Job Search
+- Filter-based job discovery
+- Salary normalization and display
+- Redirect to external application platforms (e.g., Handshake)
+- Structured job listing interface
+
+### 2️⃣ Market Analyzer
+- Public preview mode
+- Demand score visualization
+- Growth trend graphs
+- Key skills extraction
+- Top companies & locations
+- AI-generated market summaries
+
+### 3️⃣ Career Plan (Multi-Agent AI)
+- Personalized role evaluation
+- 6-agent structured reasoning model
+- Skill alignment score
+- Gap detection
+- Actionable next steps
+- Confidence scoring
+
+### 4️⃣ Profile Management
+- Step-by-step onboarding
+- Education & experience capture
+- Skills tagging
+- Editable profile dashboard
+- Avatar upload
+
+### 5️⃣ Authentication
+- OTP-based login
+- Account creation
+- Protected routes
+- Token refresh handling
+
+---
+
+## Multi-Agent Reasoning Model
+
+The Career Plan integrates outputs from six conceptual agents:
+
+1. Market Demand Agent  
+2. Skill Alignment Agent  
+3. Competition Agent  
+4. Education & Experience Agent  
+5. Strategy Agent  
+6. Synthesis Agent  
+
+This enables explainable, structured career guidance instead of black-box recommendations.
+
+---
+
+## Tech Stack
+
+### Framework
+- Next.js 14 (App Router)
+- TypeScript
+
+### Styling & UI
+- Tailwind CSS
+- Custom Glass UI Components
+- Radix UI
+- Recharts (Data Visualization)
+
+### Architecture
+- React Hooks
+- Modular API abstraction layer (`lib/api`)
+- Token-based authentication
+- Next.js Route Handlers (Serverless proxy)
+
+### Deployment
+- Vercel (Frontend Hosting)
+- Serverless API proxy layer
+
+---
+
+## Project Structure
+
+```
+
 src/
- ├── app/
- │   ├── (auth)/
- │   ├── (main)/
- │   ├── (public)/
- │   ├── (onboarding)/
- │   └── api/backend/[...path]/
- ├── components/
- ├── lib/
- │   ├── api/
- │   ├── auth/
- │   ├── data/
- │   └── utils/
+├── app/
+│   ├── (auth)/
+│   ├── (main)/
+│   ├── (public)/
+│   ├── (onboarding)/
+│   └── api/backend/[...path]/
+├── components/
+├── lib/
+│   ├── api/
+│   ├── auth/
+│   ├── data/
+│   └── utils/
 
- 🔗 Backend Repository
+```
 
-The backend implementation (AI engine, authentication, database, and market processing) is available here:
+---
+
+## Backend Repository
+
+The backend implementation powering AI analysis, authentication, and market processing is available here:
 
 👉 https://github.com/ishreyakumari97/Capstone-backend
 
-### Backend endpoints used (from your Supernova collection)
-- `POST /auth/signup` (minimal + complete)
-- `POST /auth/login` (send OTP)
-- `POST /auth/verify-login` (verify OTP)
+---
+
+## Backend API Endpoints
+
+The frontend communicates with the backend through the following endpoints (via proxy):
+
+### Authentication
+- `POST /auth/login`
+- `POST /auth/verify-login`
 - `POST /auth/refresh-token`
-- `GET /auth/user`
-- `POST /auth/logout`
 
-## Notes
-- The Skills step enforces **minimum 4 skills** with proficiency level (1–5).
-- Onboarding: Education → Experience → Skills → Citizenship → Career Preferences → Salary & Links.
-- Complete signup payload matches backend: `POST /auth/signup` with all fields.
-- Set `NEXT_PUBLIC_API_BASE_URL=/api/backend` for frontend calls.
-- Set `BACKEND_URL=http://localhost:4300/api/backend` so the Next.js proxy forwards to your backend.
-- UI follows your Canva design: teal background, centered glass cards, bottom navigation.
+### Market Analysis
+- `POST /market/analyze/preview`
+- `POST /market/analyze/full`
 
+### Career Plan
+- `POST /career-plan/generate`
 
+### Jobs
+- `GET /jobs`
+- `GET /jobs/:id`
 
-💻 Local Development Setup
-1️⃣ Clone Repository
+All calls are routed through:
+
+```
+
+/api/backend/[...path]
+
+```
+
+which forwards to:
+
+```
+
+${BACKEND_URL}/<actual-endpoint>
+
+````
+
+---
+
+## Local Development Setup
+
+### 1️⃣ Clone Repository
+
+```bash
 git clone https://github.com/RichaSapre/Career-Mentor.git
 cd Career-Mentor
-2️⃣ Install Dependencies
+````
+
+### 2️⃣ Install Dependencies
+
+```bash
 npm install
-3️⃣ Configure Environment Variables
+```
 
-Create a file:
+### 3️⃣ Configure Environment Variables
 
-.env.local
+Create a `.env.local` file in the root directory:
 
-Add:
-
+```
 BACKEND_URL=http://<production-backend-url>/alpha/api/v1
+```
 
-This is required for the proxy route to forward requests.
+This variable is required for proxy routing.
 
-4️⃣ Run Development Server
+### 4️⃣ Run Development Server
+
+```bash
 npm run dev
+```
 
-Application runs at:
+Application will run at:
 
+```
 http://localhost:3000
-🌍 Environment Variables
-Required (Frontend)
-Variable	Description
-BACKEND_URL	Production backend base URL used by proxy route
-Not Required on Frontend
+```
 
-The following must NOT be added to frontend environment:
+---
 
-MongoDB URI
-JWT secrets
-OpenAI API keys
-Redis configuration
-Bcrypt config
+## Environment Variables (Frontend)
+
+| Variable    | Purpose                          |
+| ----------- | -------------------------------- |
+| BACKEND_URL | Base URL of deployed backend API |
+
+⚠️ The following should NEVER be added to the frontend:
+
+* MongoDB URI
+* JWT secrets
+* OpenAI API keys
+* Redis credentials
 
 These belong strictly to the backend.
 
-⚠️ Project Disclaimer
-Career Mentor is a research-based academic project.
-It is not a direct job board.
-Applications must be submitted via external platforms.
-AI recommendations are advisory in nature.
-Limited usage per account due to compute constraints.
-Market data is derived from publicly available listings.
-📊 Academic Contribution
+---
 
-This project contributes to:
+## Disclaimer
 
-AI transparency in career systems
-Data-driven career planning
-Market-informed skill alignment
-Structured decision-support design
-Student-focused intelligent systems
-👩‍💻 Authors
+* Career Mentor is an academic research project.
+* It is not a direct job board.
+* Applications must be submitted via external platforms.
+* AI-generated insights are advisory in nature.
+* Usage limits exist due to compute constraints.
+* Market data is derived from publicly available listings.
 
-Richa Sapre
-Shreya Kumari
+---
 
-Under the guidance of Prof. Hongmin Li
+## Academic Contribution
 
+This project explores:
 
+* Explainable AI in career systems
+* Structured multi-agent reasoning
+* Market-driven skill alignment
+* Data-informed student decision support
+* Intelligent career planning interfaces
+
+---
+
+## Authors
+
+**Richa Sapre**
+**Shreya Kumari**
+
+Under the guidance of **Prof. Hongmin Li**
+
+```
+
+---
+
+If you'd like next, I can:
+
+- Add a visual architecture diagram image
+- Add a “Future Work” section
+- Add a “Research Limitations” section
+- Optimize this README for recruiters
+- Add badges (Vercel, Next.js, TypeScript, etc.)
+
+Just tell me the direction you want.
+```
